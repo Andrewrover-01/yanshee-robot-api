@@ -12,17 +12,18 @@ from yanshee_robot_api import (
 
 # Robot API endpoint IP.
 ROBOT_IP = os.getenv("YAN_ROBOT_IP", "192.168.1.163")
+DEFAULT_PAUSE_SECONDS = 0.2
 
 
 DANCE_STEPS = [
-    (RobotBuiltInMotion.wave.value, RobotMotionDirection.left.value, RobotMotionSpeed.fast.value, 1, 0.2),
-    (RobotBuiltInMotion.wave.value, RobotMotionDirection.right.value, RobotMotionSpeed.fast.value, 1, 0.2),
-    (RobotBuiltInMotion.comeOn.value, RobotMotionDirection.none.value, RobotMotionSpeed.normal.value, 1, 0.2),
-    (RobotBuiltInMotion.stretch.value, RobotMotionDirection.none.value, RobotMotionSpeed.normal.value, 1, 0.2),
-    (RobotBuiltInMotion.turnAround.value, RobotMotionDirection.left.value, RobotMotionSpeed.normal.value, 1, 0.2),
-    (RobotBuiltInMotion.handsUp.value, RobotMotionDirection.none.value, RobotMotionSpeed.fast.value, 1, 0.2),
-    (RobotBuiltInMotion.bend.value, RobotMotionDirection.none.value, RobotMotionSpeed.normal.value, 1, 0.2),
-    (RobotBuiltInMotion.head.value, RobotMotionDirection.none.value, RobotMotionSpeed.fast.value, 1, 0.2),
+    (RobotBuiltInMotion.wave.value, RobotMotionDirection.left.value, RobotMotionSpeed.fast.value, 1, DEFAULT_PAUSE_SECONDS),
+    (RobotBuiltInMotion.wave.value, RobotMotionDirection.right.value, RobotMotionSpeed.fast.value, 1, DEFAULT_PAUSE_SECONDS),
+    (RobotBuiltInMotion.comeOn.value, RobotMotionDirection.none.value, RobotMotionSpeed.normal.value, 1, DEFAULT_PAUSE_SECONDS),
+    (RobotBuiltInMotion.stretch.value, RobotMotionDirection.none.value, RobotMotionSpeed.normal.value, 1, DEFAULT_PAUSE_SECONDS),
+    (RobotBuiltInMotion.turnAround.value, RobotMotionDirection.left.value, RobotMotionSpeed.normal.value, 1, DEFAULT_PAUSE_SECONDS),
+    (RobotBuiltInMotion.handsUp.value, RobotMotionDirection.none.value, RobotMotionSpeed.fast.value, 1, DEFAULT_PAUSE_SECONDS),
+    (RobotBuiltInMotion.bend.value, RobotMotionDirection.none.value, RobotMotionSpeed.normal.value, 1, DEFAULT_PAUSE_SECONDS),
+    (RobotBuiltInMotion.head.value, RobotMotionDirection.none.value, RobotMotionSpeed.fast.value, 1, DEFAULT_PAUSE_SECONDS),
 ]
 
 
@@ -38,16 +39,16 @@ def run_timed_dance(duration_seconds: int = 60) -> bool:
     step_index = 0
 
     while time.time() - start < duration_seconds:
-        name, direction, speed, repeat, pause = DANCE_STEPS[step_index % len(DANCE_STEPS)]
+        motion_name, direction, speed, repeat, pause = DANCE_STEPS[step_index % len(DANCE_STEPS)]
         ok = sync_play_motion(
-            name=name,
+            name=motion_name,
             direction=direction,
             speed=speed,
             repeat=repeat,
             version="v1",
         )
         if not ok:
-            print(f"Motion execution failed: {name}")
+            print(f"Motion execution failed: {motion_name}")
             return False
 
         remaining = duration_seconds - (time.time() - start)
