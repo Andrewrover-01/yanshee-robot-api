@@ -134,3 +134,152 @@ class RobotJointType(Enum):
     No15 = "LeftAnkleFB"
     No16 = "LeftAnkleUD"
     No17 = "NeckLR"
+
+
+class RobotJointInfo():
+    def __init__(self, jointType, angel: int):
+        if isinstance(jointType, str):
+            strlist = jointType.split('_')
+            newStrList = []
+            newStr = ""
+            if len(strlist) == 1:
+                newStr = strlist[0]
+            else:
+                for strItem in strlist:
+                    newStrList.append(strItem.title())
+                for strItem in newStrList:
+                    newStr = newStr + strItem
+            self.jointType = RobotJointType(newStr)
+        elif isinstance(jointType, RobotJointType):
+            self.jointType = jointType
+        else:
+            raise ValueError("jointType value error")
+        self.angel = angel
+
+
+class RobotActionFrame():
+    def __init__(self, actionFrame: Dict):
+        self._actionFrame = {}
+        for key, value in actionFrame.items():
+            jointInfo = RobotJointInfo(key, value)
+            self._actionFrame[jointInfo.jointType.value] = jointInfo
+
+    @property
+    def interfaceDict(self):
+        ret = {}
+        for key, value in self._actionFrame.items():
+            ret[key] = value.angel
+        return ret
+
+    def __getitem__(self, key):
+        if not isinstance(key, str):
+            return -1
+        jointInfo = self._actionFrame.get(key)
+        if not jointInfo:
+            return -1
+        return jointInfo.angel
+
+    def addOrUpdateJointInfo(self, jointInfo: RobotJointInfo):
+        self._actionFrame[jointInfo.jointType.value] = jointInfo
+
+    def delJointInfo(self, jointType: RobotJointType):
+        self._actionFrame.pop(jointType.value)
+
+
+class RobotBatteryInfo():
+    def __init__(self, data=None):
+        self._batteryPercentage = 0
+        self._chargingState = 0
+        self._voltage = 0
+        if data:
+            self.__dict__ = data
+            self._batteryPercentage = data["percent"]
+            self._chargingState = data["charging"]
+            self._voltage = data["voltage"]
+
+    @property
+    def batteryPercentage(self):
+        return self._batteryPercentage
+
+    @property
+    def chargingState(self):
+        return self._chargingState
+
+    @property
+    def voltage(self):
+        return self._voltage
+
+
+class RobotVersionInfo():
+    def __init__(self, data=None):
+        self._coreVersion = ""
+        self._servoVersion = ""
+        self._sn = ""
+        if data:
+            self.updateWithData(data)
+
+    def updateWithData(self, data: dict):
+        if "core" in data:
+            self._coreVersion = data["core"]
+        if "servo" in data:
+            self._servoVersion = data["servo"]
+        if "sn" in data:
+            self._sn = data["sn"]
+
+    @property
+    def core(self):
+        return self._coreVersion
+
+    @property
+    def servo(self):
+        return self._servoVersion
+
+    @property
+    def sn(self):
+        return self._sn
+
+
+class RobotLedInfo():
+    def __init__(self, data=None):
+        self._buttonLedColor = ""
+        self._buttonLedMode = ""
+        self._eyeLedColor = ""
+        self._eyeLedMode = ""
+        if not data:
+            return
+        for item in data:
+            if item["type"] == "button":
+                self._buttonLedColor = item["color"]
+                self._buttonLedMode = item["mode"]
+            if item["type"] == "camera":
+                self._eyeLedColor = item["color"]
+                self._eyeLedMode = item["mode"]
+
+    @property
+    def buttonLedColor(self):
+        return self._buttonLedColor
+
+    @property
+    def buttonLedMode(self):
+        return self._buttonLedMode
+
+    @property
+    def eyeLedColor(self):
+        return self._eyeLedColor
+
+    @property
+    def eyeLedMode(self):
+        return self._eyeLedMode
+
+
+class RobotAsrResult():
+    def __init__(self, data=None):
+        self._question = ""
+        self._answer = ""
+        if data:
+            self._question = data["intent"]["text"]
+            self._answer = data["intent"]["answer"]["text"]
+
+    @property
+    def retDict(self):
+        return {"question": self._question, "answer": self._answer}
