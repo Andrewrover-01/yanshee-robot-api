@@ -650,3 +650,106 @@ def sync_play_music(name: str = ""):
     tasks = loop.create_task(coroutine)
     loop.run_until_complete(tasks)
     return True
+
+
+# ──────────────────────────────────────────────────────────────
+# Part 6: Motion file control (dance core)
+# ──────────────────────────────────────────────────────────────
+
+def delete_motion(name: str):
+    motions_url = basic_url + "motions"
+    param = {"name": name}
+    json_data = json.dumps(param)
+    response = requests.delete(url=motions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_current_motion_play_state():
+    motions_url = basic_url + "motions"
+    response = requests.get(url=motions_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_current_layer_motion_play_state():
+    motions_url = basic_url + "motions/all"
+    response = requests.get(url=motions_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def __control_motion_play_state(operation: str = "start", name: str = "reset", direction: str = "", speed: str = "normal", repeat: int = 1, timestamp: int = 0, version: str = "v1"):
+    motion_url = basic_url + "motions"
+    param = {"operation": operation, "motion": {"name": name, "repeat": repeat, "speed": speed}, "timestamp": timestamp, "version": version}
+    if len(direction) != 0:
+        param["motion"]["direction"] = direction
+    json_data = json.dumps(param)
+    response = requests.put(url=motion_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def start_play_motion(name: str = "reset", direction: str = "", speed: str = "normal", repeat: int = 1, timestamp: int = 0, version: str = "v1"):
+    return __control_motion_play_state(operation="start", name=name, direction=direction, speed=speed, repeat=repeat, timestamp=timestamp, version=version)
+
+
+def pause_play_motion(name: str = "", timestamp: int = 0, version: str = "v1"):
+    return __control_motion_play_state(name=name, operation="pause", timestamp=timestamp, version=version)
+
+
+def resume_play_motion(name: str = "", timestamp: int = 0, version: str = "v1"):
+    return __control_motion_play_state(name=name, operation="resume", timestamp=timestamp, version=version)
+
+
+def stop_play_motion(name: str = "", timestamp: int = 0, version: str = "v1"):
+    return __control_motion_play_state(name=name, operation="stop", timestamp=timestamp, version=version)
+
+
+def sync_play_motion(name: str = "reset", direction: str = "", speed: str = "normal", repeat: int = 1, version: str = "v1"):
+    t = int(time.time() * 1000)
+    res = start_play_motion(direction=direction, speed=speed, repeat=repeat, name=name, timestamp=t, version=version)
+    if res['code'] != 0:
+        return False
+    if version == "v1":
+        coroutine = __wait_result_motion(name=name, start_time=t, getFuc=get_current_motion_play_state)
+    elif version == "v2":
+        coroutine = __wait_result_layer_motion(name=name, start_time=t, getFuc=get_current_layer_motion_play_state)
+    loop = asyncio.get_event_loop()
+    tasks = loop.create_task(coroutine)
+    loop.run_until_complete(tasks)
+    return True
+
+
+def upload_motion(filePath: str):
+    motions_url = basic_url + "motions"
+    upload_headers = {'Authorization': 'multipart/form-data'}
+    files = {'file': open(filePath, 'rb')}
+    response = requests.post(url=motions_url, files=files, headers=upload_headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_motion_list_value():
+    motions_url = basic_url + "motions/list"
+    response = requests.get(url=motions_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    if not __resIsSuccess(res):
+        return []
+    motion = []
+    for item in res['data']['system_hts_motions']:
+        motion.append(item['name'].rsplit('.', 1)[0])
+    for item in res['data']['system_layers_motions']:
+        motion.append(item['name'].rsplit('.', 1)[0])
+    for item in res['data']['user_hts_motions']:
+        motion.append(item['name'].rsplit('.', 1)[0])
+    for item in res['data']['user_layers_motions']:
+        motion.append(item['name'].rsplit('.', 1)[0])
+    return motion
+
+
+def get_motion_list():
+    motions_url = basic_url + "motions/list"
+    response = requests.get(url=motions_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
