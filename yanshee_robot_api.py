@@ -1456,6 +1456,25 @@ def start_subscribe_voice_tts(url: str, timeout: int = 10):
     return res
 
 
+@unique
+class GamepadKey(Enum):
+    A = "A"
+    B = "B"
+    X = "X"
+    Y = "Y"
+    Up = "Up"
+    Down = "Down"
+    Left = "Left"
+    Right = "Right"
+    L1 = "L1"
+    R1 = "R1"
+    L2 = "L2"
+    R2 = "R2"
+    Select = "Select"
+    Start = "Start"
+    Home = "Home"
+
+
 class GamepadKeymap():
     def __init__(self, keyName: GamepadKey = None, htsName=None, longPress=False):
         self.keyName = keyName.value
@@ -1615,7 +1634,7 @@ class ukit_controller:
 
     def creat_channel_to_ukit(self, port=0):
         self.port = port + 25880
-        ipstr = '([0-9]{1,3}\.){3}[0-9]{1,3}'
+        ipstr = r'([0-9]{1,3}\.){3}[0-9]{1,3}'
         ipconfig = subprocess.Popen("ifconfig", stdout=subprocess.PIPE)
         output = str(ipconfig.stdout.read())
         broads = re.findall('broadcast %s' % ipstr, output)
