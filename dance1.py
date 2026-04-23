@@ -67,11 +67,11 @@ def dance():
     # ── 第四段：律动 ──────────────────────────────────────────
     YanAPI.set_robot_led("button", "yellow", "blink")
 
-    # 左弯腰 → 右弯腰
-    print("执行动作: bend direction=left")
-    YanAPI.sync_play_motion("bend", direction="left")
-    print("执行动作: bend direction=right")
-    YanAPI.sync_play_motion("bend", direction="right")
+    # 向左挥手 → 向右挥手（原 bend 动作会导致机器人倒地，改用稳定的 wave）
+    print("执行动作: wave direction=left")
+    YanAPI.sync_play_motion("wave", direction="left")
+    print("执行动作: wave direction=right")
+    YanAPI.sync_play_motion("wave", direction="right")
     # 蹲下 → 站起（crouch 为蹲下动作）
     print("执行动作: crouch")
     YanAPI.sync_play_motion("crouch")
