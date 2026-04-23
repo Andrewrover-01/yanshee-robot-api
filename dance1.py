@@ -51,10 +51,10 @@ def run_timed_dance(duration_seconds: int = 60) -> bool:
             print(f"Motion execution failed: {motion_name}")
             return False
 
-        remaining = duration_seconds - (time.time() - start)
-        if remaining <= 0:
+        remaining_after_motion = duration_seconds - (time.time() - start)
+        if remaining_after_motion <= 0:
             break
-        time.sleep(min(pause, remaining))
+        time.sleep(min(pause, remaining_after_motion))
         step_index += 1
 
     reset_ok = sync_play_motion(
