@@ -1316,3 +1316,333 @@ def show_visions_result(operation):
         cv2.destroyAllWindows()
         cv2.waitKey(1)
         do_visions_visible('stop', operation)
+
+
+# ──────────────────────────────────────────────────────────────
+# Part 10: Subscriptions, Gamepad, Voice, ukit_controller
+# ──────────────────────────────────────────────────────────────
+
+def stop_subscribe_motion(url: str):
+    subscriptions_url = basic_url + "subscriptions/motions"
+    param = {"url": url}
+    json_data = json.dumps(param)
+    response = requests.delete(url=subscriptions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def start_subscribe_motion(url: str, timeout: int = 10):
+    subscriptions_url = basic_url + "subscriptions/motions"
+    param = {"url": url, "timeout": timeout}
+    json_data = json.dumps(param)
+    response = requests.post(url=subscriptions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def stop_subscribe_motion_gait(url: str):
+    subscriptions_url = basic_url + "subscriptions/motions/gait"
+    param = {"url": url}
+    json_data = json.dumps(param)
+    response = requests.delete(url=subscriptions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def start_subscribe_motion_gait(url: str, timeout: int = 10):
+    subscriptions_url = basic_url + "subscriptions/motions/gait"
+    param = {"url": url, "timeout": timeout}
+    json_data = json.dumps(param)
+    response = requests.post(url=subscriptions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def stop_subscribe_sensor(url, type, id=0, slot=0):
+    subscriptions_url = basic_url + "subscriptions/sensors"
+    param = {"url": url, "type": type}
+    if id != 0:
+        param["id"] = id
+    if slot != 0:
+        param["slot"] = slot
+    json_data = json.dumps(param)
+    response = requests.delete(url=subscriptions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def start_subscribe_sensor(url: str, type: str, id=0, slot=0, timeval=100, timeout=10):
+    subscriptions_url = basic_url + "subscriptions/sensors"
+    param = {"url": url, "type": type, "timeval": timeval, "timeout": timeout}
+    if id != 0:
+        param["id"] = id
+    if slot != 0:
+        param["slot"] = slot
+    json_data = json.dumps(param)
+    response = requests.post(url=subscriptions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def stop_subscribe_vision(url: str, type: str):
+    subscriptions_url = basic_url + "subscriptions/visions"
+    param = {"url": url, "type": type}
+    json_data = json.dumps(param)
+    response = requests.delete(url=subscriptions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def start_subscribe_vision(url: str, type: str, timeout: int = 10):
+    subscriptions_url = basic_url + "subscriptions/visions"
+    param = {"url": url, "type": type, "timeout": timeout}
+    json_data = json.dumps(param)
+    response = requests.post(url=subscriptions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def stop_subscribe_voice_asr(url: str):
+    subscriptions_url = basic_url + "subscriptions/voice/asr"
+    param = {"url": url}
+    json_data = json.dumps(param)
+    response = requests.delete(url=subscriptions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def start_subscribe_voice_asr(url: str, timeout: int = 10):
+    subscriptions_url = basic_url + "subscriptions/voice/asr"
+    param = {"url": url, "timeout": timeout}
+    json_data = json.dumps(param)
+    response = requests.post(url=subscriptions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def stop_subscribe_voice_iat(url: str):
+    subscriptions_url = basic_url + "subscriptions/voice/iat"
+    param = {"url": url}
+    json_data = json.dumps(param)
+    response = requests.delete(url=subscriptions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def start_subscribe_voice_iat(url: str, timeout=10):
+    subscriptions_url = basic_url + "subscriptions/voice/iat"
+    param = {"url": url, "timeout": timeout}
+    json_data = json.dumps(param)
+    response = requests.post(url=subscriptions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def stop_subscribe_voice_tts(url: str):
+    subscriptions_url = basic_url + "subscriptions/voice/tts"
+    param = {"url": url}
+    json_data = json.dumps(param)
+    response = requests.delete(url=subscriptions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def start_subscribe_voice_tts(url: str, timeout: int = 10):
+    subscriptions_url = basic_url + "subscriptions/voice/tts"
+    param = {"url": url, "timeout": timeout}
+    json_data = json.dumps(param)
+    response = requests.post(url=subscriptions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+class GamepadKeymap():
+    def __init__(self, keyName: GamepadKey = None, htsName=None, longPress=False):
+        self.keyName = keyName.value
+        self.htsName = htsName
+        self.longPress = longPress
+
+    @property
+    def key_name(self):
+        return self.keyName
+
+    @property
+    def hts_name(self):
+        return self.htsName
+
+    @property
+    def long_press(self):
+        return self.longPress
+
+
+def get_gamepad_keymap():
+    voice_url = basic_url + "gamepad/keymap/get"
+    response = requests.get(url=voice_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def set_gamepad_keymap(key_name: GamepadKey, hts_name: str, long_press: bool = False):
+    return set_gamepad_keymaps([GamepadKeymap(key_name, hts_name, long_press)])
+
+
+def set_gamepad_keymaps(keymaps: List[GamepadKeymap]):
+    servos_url = basic_url + "gamepad/keymap/set"
+    param = {"keymaps": keymaps}
+
+    def default(obj):
+        if isinstance(obj, GamepadKeymap):
+            return obj.__dict__
+        return obj
+
+    json_data = json.dumps(param, default=default)
+    response = requests.put(url=servos_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def reset_gamepad_keymap(key_name: GamepadKey):
+    return reset_gamepad_keymaps([key_name])
+
+
+def reset_gamepad_keymaps(key_name_list: List[GamepadKey] = None, reset_all: bool = False):
+    servos_url = basic_url + "gamepad/keymap/reset"
+    if key_name_list is None:
+        key_name_list = []
+    param = {"keynames": key_name_list, "resetall": reset_all}
+
+    def default(obj):
+        if isinstance(obj, GamepadKey):
+            return obj.value
+        return obj
+
+    json_data = json.dumps(param, default=default)
+    response = requests.put(url=servos_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+class Voice(object):
+    def __init__(self):
+        pass
+
+    def stop_voice_asr(self):
+        voice_url = basic_url + "voice/iat"
+        response = requests.delete(url=voice_url, headers=headers)
+        res = json.loads(str(response.content.decode("utf-8")))
+        return res
+
+    def get_voice_asr(self):
+        voice_url = basic_url + "voice/iat"
+        response = requests.get(url=voice_url, headers=headers)
+        res = json.loads(str(response.content.decode("utf-8")))
+        res["data"] = json.loads(res["data"].strip(b'\x00'.decode()))
+        return res
+
+    def start_voice_asr(self, timestamp: int = 0):
+        voice_url = basic_url + "voice/iat"
+        param = {"timestamp": timestamp}
+        json_data = json.dumps(param)
+        response = requests.put(url=voice_url, data=json_data, headers=headers)
+        res = json.loads(str(response.content.decode("utf-8")))
+        return res
+
+    def sync_do_voice_asr_value(self):
+        timestamp = int(time.time())
+        successed = self.start_voice_asr(timestamp=timestamp)
+        if not successed:
+            return ""
+        coroutine = self.__wait_result(timestamp, self.get_voice_asr)
+        loop = asyncio.get_event_loop()
+        task = loop.create_task(coroutine)
+        loop.run_until_complete(task)
+        res = task.result()
+        if not self.__resIsSuccess(res):
+            return ""
+        words = res["data"].get("text", {}).get("ws", [])
+        result = ""
+        for word in words:
+            result += word['cw'][0]['w']
+        return result
+
+    def sync_do_tts(self, tts: str = "", interrupt: bool = True):
+        t = int(time.time())
+        res = self.start_voice_tts(tts=tts, interrupt=interrupt, timestamp=t)
+        if res['code'] != 0:
+            return res
+        coroutine = self.__wait_result_common(timestamp=t, getFuc=self.get_voice_tts_state, args=(t,))
+        loop = asyncio.get_event_loop()
+        tasks = loop.create_task(coroutine)
+        loop.run_until_complete(tasks)
+        return tasks.result()
+
+    async def __wait_result(self, timestamp, getFuc):
+        while True:
+            res = getFuc()
+            if timestamp == res["timestamp"]:
+                if res["status"] == "idle":
+                    return res
+                else:
+                    await asyncio.sleep(1)
+
+    async def __wait_result_common(self, timestamp, getFuc, args=()):
+        while True:
+            res = getFuc(*args)
+            if timestamp == res["timestamp"]:
+                if res["status"] == "idle":
+                    return res
+                else:
+                    await asyncio.sleep(1)
+
+    def __resIsSuccess(self, res):
+        if not isinstance(res, Dict):
+            return False
+        return res.get("code") == 0
+
+
+class ukit_controller:
+    send_ip = "255.255.255.255"
+    recv_ip = "0.0.0.0"
+    port = 25880
+    buffsize = 1024
+    udp_send_socket = socket(AF_INET, SOCK_DGRAM)
+    udp_recv_socket = socket(AF_INET, SOCK_DGRAM)
+
+    def __init__(self):
+        self.udp_send_socket.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+        self.send_addr = (self.send_ip, self.port)
+        self.recv_addr = (self.recv_ip, self.port)
+
+    def creat_channel_to_ukit(self, port=0):
+        self.port = port + 25880
+        ipstr = '([0-9]{1,3}\.){3}[0-9]{1,3}'
+        ipconfig = subprocess.Popen("ifconfig", stdout=subprocess.PIPE)
+        output = str(ipconfig.stdout.read())
+        broads = re.findall('broadcast %s' % ipstr, output)
+        if broads:
+            self.send_ip = broads[0].split()[1]
+        self.send_addr = (self.send_ip, self.port)
+        self.recv_addr = (self.recv_ip, self.port)
+        self.udp_recv_socket.bind(self.recv_addr)
+
+    def send_msg_to_ukit(self, msg):
+        data_msg = lib_send.lib_send_data_to_uKit(msg)
+        self.udp_send_socket.sendto(bytes.fromhex(data_msg), self.send_addr)
+
+    def get_msg_from_ukit(self):
+        data, addr = self.udp_recv_socket.recvfrom(self.buffsize)
+        return lib_send.lib_get_msg_from_uKit(data.hex())
+
+    def close_channel_to_ukit(self):
+        self.udp_send_socket.close()
+        self.udp_recv_socket.close()
+
+
+# if __name__ == '__main__':
+#    hear = ""
+#    try:
+#        res = sync_do_voice_iat()
+#        if res is not None:
+#            for ws in res['data']['text']['ws']:
+#                for cw in ws['cw']: hear = hear + cw['w']
+#    except: pass
