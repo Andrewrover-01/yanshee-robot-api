@@ -398,3 +398,189 @@ def __resIsSuccess(res):
     if "code" not in res:
         return False
     return res["code"] == 0
+
+
+# ──────────────────────────────────────────────────────────────
+# Part 4: Basic device API
+# ──────────────────────────────────────────────────────────────
+
+def get_ip_address(ifname):
+    s = socket(AF_INET, SOCK_DGRAM)
+    return inet_ntoa(fcntl.ioctl(s.fileno(), 0x8915, struct.pack('256s', ifname[:15]))[20:24])
+
+
+def yan_api_init(robot_ip: str):
+    global basic_url
+    global ip
+    basic_url = "http://" + robot_ip + ":9090/v1/"
+    ip = robot_ip
+    logging.basicConfig(
+        level=logging.ERROR,
+        format="%(asctime)s %(funcName)s %(levelname)s %(message)s",
+        datefmt='%Y-%m-%d  %H:%M:%S %a',
+    )
+
+
+def get_robot_battery_info():
+    devices_url = basic_url + "devices/battery"
+    response = requests.get(url=devices_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_robot_battery_value():
+    devices_url = basic_url + "devices/battery"
+    response = requests.get(url=devices_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    if __resIsSuccess(res):
+        batteryInfo = RobotBatteryInfo(res["data"])
+        return batteryInfo.batteryPercentage
+    else:
+        return -1
+
+
+def get_robot_fall_management_state():
+    devices_url = basic_url + "devices/fall_management"
+    response = requests.get(url=devices_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def set_robot_fall_management_state(enable: bool):
+    devices_url = basic_url + "devices/fall_management"
+    param = {"enable": enable}
+    json_data = json.dumps(param)
+    response = requests.put(url=devices_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_robot_language():
+    languages_url = basic_url + "devices/languages"
+    response = requests.get(url=languages_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def set_robot_language(language: str):
+    languages_url = basic_url + "devices/languages"
+    param = {"language": language}
+    json_data = json.dumps(param)
+    response = requests.put(url=languages_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def __get_robot_led_info():
+    led_url = basic_url + "devices/led"
+    response = requests.get(url=led_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    if __resIsSuccess(res):
+        ledInfo = RobotLedInfo(res["data"])
+        return ledInfo
+    else:
+        return RobotLedInfo()
+
+
+def get_button_led_color_value():
+    return __get_robot_led_info().buttonLedColor
+
+
+def get_button_led_mode_value():
+    return __get_robot_led_info().buttonLedMode
+
+
+def get_eye_led_color_value():
+    return __get_robot_led_info().eyeLedColor
+
+
+def get_eye_led_mode_value():
+    return __get_robot_led_info().eyeLedMode
+
+
+def get_robot_led():
+    led_url = basic_url + "devices/led"
+    response = requests.get(url=led_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def set_robot_led(type: str, color: str, mode: str):
+    led_url = basic_url + "devices/led"
+    param = {"type": type, "color": color, "mode": mode}
+    json_data = json.dumps(param)
+    response = requests.put(url=led_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def sync_set_led(type: str, color: str, mode: str):
+    res = set_robot_led(type=type, color=color, mode=mode)
+    if res['code'] != 0:
+        return False
+    coroutine = __wait_result_color(type=type, color=color, mode=mode, getFuc=get_robot_led)
+    loop = asyncio.get_event_loop()
+    tasks = loop.create_task(coroutine)
+    loop.run_until_complete(tasks)
+    return True
+
+
+def get_robot_version_info_value(type: str):
+    version_url = basic_url + "devices/versions"
+    params = {'type': type}
+    response = requests.get(url=version_url, headers=headers, params=params)
+    res = json.loads(str(response.content.decode("utf-8")))
+    if __resIsSuccess(res):
+        versionInfo = RobotVersionInfo(res["data"])
+        return getattr(versionInfo, type)
+    else:
+        return ""
+
+
+def get_robot_version_info(type: str):
+    version_url = basic_url + "devices/versions"
+    params = {'type': type}
+    response = requests.get(url=version_url, headers=headers, params=params)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_robot_mode():
+    request_url = basic_url + "devices/mode"
+    response = requests.get(url=request_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_robot_volume_value():
+    volume_url = basic_url + "devices/volume"
+    response = requests.get(url=volume_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    if not __resIsSuccess(res):
+        return -1
+    return res["data"]["volume"] if isinstance(res["data"]["volume"], int) else -1
+
+
+def get_robot_volume():
+    volume_url = basic_url + "devices/volume"
+    response = requests.get(url=volume_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def set_robot_volume_value(volume: int):
+    volume_url = basic_url + "devices/volume"
+    param = {"volume": volume}
+    json_data = json.dumps(param)
+    response = requests.put(url=volume_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return __resIsSuccess(res)
+
+
+def set_robot_volume(volume: int):
+    volume_url = basic_url + "devices/volume"
+    param = {"volume": volume}
+    json_data = json.dumps(param)
+    response = requests.put(url=volume_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
