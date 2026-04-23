@@ -753,3 +753,118 @@ def get_motion_list():
     response = requests.get(url=motions_url, headers=headers)
     res = json.loads(str(response.content.decode("utf-8")))
     return res
+
+
+# ──────────────────────────────────────────────────────────────
+# Part 7: Gait & servo direct control
+# ──────────────────────────────────────────────────────────────
+
+def control_motion_gait(speed_v: int = 0, speed_h: int = 0, steps: int = 0, period: int = 1, wave: bool = False):
+    motion_url = basic_url + "motions/gait"
+    timestamp = int(time.time() * 1000)
+    param = {
+        "speed_v": speed_v,
+        "speed_h": speed_h,
+        "steps": steps,
+        "period": period,
+        "timestamp": timestamp,
+        "wave": wave
+    }
+    json_data = json.dumps(param)
+    response = requests.put(url=motion_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_motion_gait_state():
+    motion_url = basic_url + "motions/gait"
+    response = requests.get(url=motion_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def exit_motion_gait():
+    motion_url = basic_url + "motions/gait"
+    payload = {"timestamp": 0}
+    response = requests.delete(url=motion_url, headers=headers, data=json.dumps(payload))
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def sync_do_motion_gait(speed_v: int = 0, speed_h: int = 0, steps: int = 0, period: int = 1, wave: bool = False):
+    t = int(time.time() * 1000)
+    res = control_motion_gait(speed_v=speed_v, speed_h=speed_h, steps=steps, period=period, wave=wave)
+    if res['code'] != 0:
+        return False
+    coroutine = __wait_result_gait(start_time=t, type='start', getFuc=get_motion_gait_state)
+    loop = asyncio.get_event_loop()
+    tasks = loop.create_task(coroutine)
+    loop.run_until_complete(tasks)
+    return True
+
+
+def get_servo_angle_value(name: str):
+    servos_url = basic_url + "servos/angles"
+    params = {'names': [name]}
+    response = requests.get(url=servos_url, headers=headers, params=params)
+    res = json.loads(str(response.content.decode("utf-8")))
+    if not __resIsSuccess(res):
+        return -1
+    values = res["data"].popitem()
+    return values[1]
+
+
+def get_servos_angles(names: List[str]):
+    servos_url = basic_url + "servos/angles"
+    params = {'names': names}
+    response = requests.get(url=servos_url, headers=headers, params=params)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def set_servos_angles(angles: Dict[str, int], runtime: int = 200):
+    servos_url = basic_url + "servos/angles"
+    param = {"angles": angles, "runtime": runtime}
+    json_data = json.dumps(param)
+    response = requests.put(url=servos_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def set_servos_angles_layers(data: Dict[str, Dict[int, int]]):
+    servos_url = basic_url + "servos/angles/layers"
+    param = {"data": data}
+    json_data = json.dumps(param)
+    response = requests.put(url=servos_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def sync_set_servo_rotate(angles: Dict[str, int], runtime: int = 200):
+    res = set_servos_angles(angles=angles, runtime=runtime)
+    if res['code'] != 0:
+        return res
+    coroutine = __wait_result_by_time(runtime / 1000)
+    loop = asyncio.get_event_loop()
+    tasks = loop.create_task(coroutine)
+    loop.run_until_complete(tasks)
+    return res
+
+
+def get_servos_mode(names: List[str]):
+    servos_url = basic_url + "servos/mode"
+    params = {"names": names}
+    response = requests.get(url=servos_url, headers=headers, params=params)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def set_servos_mode(mode: str, servos: List[str]):
+    servos_url = basic_url + "servos/mode"
+    param = {"mode": mode, "servos": []}
+    for i in range(len(servos)):
+        param["servos"].append({"name": servos[i]})
+    json_data = json.dumps(param)
+    response = requests.put(url=servos_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
