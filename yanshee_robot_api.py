@@ -584,3 +584,69 @@ def set_robot_volume(volume: int):
     response = requests.put(url=volume_url, data=json_data, headers=headers)
     res = json.loads(str(response.content.decode("utf-8")))
     return res
+
+
+# ──────────────────────────────────────────────────────────────
+# Part 5: Music and media control
+# ──────────────────────────────────────────────────────────────
+
+def delete_media_music(name: str):
+    music_url = basic_url + "media/music"
+    param = {"name": name}
+    json_data = json.dumps(param)
+    response = requests.delete(url=music_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_media_music_state():
+    music_url = basic_url + "media/music"
+    response = requests.get(url=music_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def upload_media_music(filePath: str):
+    music_url = basic_url + "media/music"
+    upload_headers = {'Authorization': 'multipart/form-data'}
+    files = {'file': open(filePath, 'rb')}
+    response = requests.post(url=music_url, files=files, headers=upload_headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def start_play_music(name: str = ""):
+    return __control_media_music(operation='start', name=name)
+
+
+def stop_play_music():
+    return __control_media_music(operation='stop')
+
+
+def __control_media_music(operation: str, name: str = ""):
+    music_url = basic_url + "media/music"
+    param = {"operation": operation}
+    if len(name) > 0:
+        param["name"] = name
+    json_data = json.dumps(param)
+    response = requests.put(url=music_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_media_music_list():
+    music_url = basic_url + "media/music/list"
+    response = requests.get(url=music_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def sync_play_music(name: str = ""):
+    res = start_play_music(name)
+    if res['code'] != 0:
+        return False
+    coroutine = __wait_result_music(name=name, start_time=None, getFuc=get_media_music_state)
+    loop = asyncio.get_event_loop()
+    tasks = loop.create_task(coroutine)
+    loop.run_until_complete(tasks)
+    return True
