@@ -1,4 +1,5 @@
 import time
+import os
 
 from yanshee_robot_api import (
     RobotBuiltInMotion,
@@ -9,10 +10,10 @@ from yanshee_robot_api import (
 )
 
 
-# 机器人连接信息（按你的需求填写）
+# Robot connection info.
 ROBOT_IP = "192.168.1.163"
-ROBOT_USER = "pi"
-ROBOT_PASSWORD = "raspberry"
+ROBOT_USER = os.getenv("YAN_ROBOT_USER", "pi")
+ROBOT_PASSWORD = os.getenv("YAN_ROBOT_PASSWORD", "")
 
 
 DANCE_STEPS = [
@@ -43,7 +44,7 @@ def run_one_minute_dance(duration_seconds: int = 60) -> bool:
             version="v1",
         )
         if not ok:
-            print(f"动作执行失败: {name}")
+            print(f"Motion execution failed: {name}")
             return False
 
         remaining = duration_seconds - (time.time() - start)
@@ -52,17 +53,19 @@ def run_one_minute_dance(duration_seconds: int = 60) -> bool:
         time.sleep(min(pause, remaining))
         step_index += 1
 
-    sync_play_motion(
+    reset_ok = sync_play_motion(
         name=RobotBuiltInMotion.reset.value,
         direction=RobotMotionDirection.none.value,
         speed=RobotMotionSpeed.normal.value,
         repeat=1,
         version="v1",
     )
+    if not reset_ok:
+        print("Warning: reset motion failed.")
     return True
 
 
 if __name__ == "__main__":
     success = run_one_minute_dance()
     if success:
-        print("dance1 执行完成（约 60 秒）。")
+        print("dance1 completed (about 60 seconds).")
