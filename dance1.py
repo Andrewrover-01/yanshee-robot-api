@@ -26,7 +26,7 @@ DANCE_STEPS = [
 ]
 
 
-def run_one_minute_dance(duration_seconds: int = 60) -> bool:
+def run_timed_dance(duration_seconds: int = 60) -> bool:
     """Initialize robot API and run dance motions for about one minute."""
     try:
         yan_api_init(ROBOT_IP)
@@ -69,8 +69,9 @@ def run_one_minute_dance(duration_seconds: int = 60) -> bool:
 
 
 if __name__ == "__main__":
-    success = run_one_minute_dance()
+    run_seconds = 60
+    success = run_timed_dance(run_seconds)
     if success:
-        print("dance1 completed (about 60 seconds).")
+        print(f"dance1 completed (about {run_seconds} seconds).")
     else:
         print("dance1 failed.")
