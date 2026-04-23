@@ -1,5 +1,4 @@
 import time
-import os
 
 from yanshee_robot_api import (
     RobotBuiltInMotion,
@@ -10,10 +9,8 @@ from yanshee_robot_api import (
 )
 
 
-# Robot connection info.
+# Robot API endpoint IP.
 ROBOT_IP = "192.168.1.163"
-ROBOT_USER = os.getenv("YAN_ROBOT_USER", "pi")
-ROBOT_PASSWORD = os.getenv("YAN_ROBOT_PASSWORD", "")
 
 
 DANCE_STEPS = [
@@ -29,7 +26,11 @@ DANCE_STEPS = [
 
 
 def run_one_minute_dance(duration_seconds: int = 60) -> bool:
-    yan_api_init(ROBOT_IP)
+    try:
+        yan_api_init(ROBOT_IP)
+    except Exception as exc:
+        print(f"Robot initialization failed: {exc}")
+        return False
 
     start = time.time()
     step_index = 0
@@ -69,3 +70,5 @@ if __name__ == "__main__":
     success = run_one_minute_dance()
     if success:
         print("dance1 completed (about 60 seconds).")
+    else:
+        print("dance1 failed.")
