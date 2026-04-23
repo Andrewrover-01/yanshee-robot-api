@@ -283,3 +283,118 @@ class RobotAsrResult():
     @property
     def retDict(self):
         return {"question": self._question, "answer": self._answer}
+
+
+async def __wait_result(timestamp, getFuc):
+    while True:
+        res = getFuc()
+        if timestamp == res["timestamp"]:
+            status = res["status"]
+            if status == "idle":
+                return res
+            else:
+                await asyncio.sleep(1)
+
+
+async def __wait_result_QR(getFuc, timeOut, checkStream=False):
+    timeCount = 0
+    beginTime = time.time()
+    global PqrStream
+    while True:
+        res = getFuc()
+        if checkStream and not (PqrStream is None) and not PqrStream.is_alive():
+            stop_QR_code_recognition()
+            return res
+        nowTime = time.time()
+        if timeOut > 0 and int(nowTime - beginTime) > timeOut:
+            stop_QR_code_recognition()
+            return res
+        if ("idle" == res["status"]) or len(res["data"]["contents"]) != 0:
+            if not (PqrStream is None):
+                PqrStream.terminate()
+                PqrStream = None
+            return res
+        else:
+            timeCount += 1
+            await asyncio.sleep(1)
+
+
+async def __wait_result_common(timestamp, getFuc, args=()):
+    while True:
+        res = getFuc(*args)
+        if timestamp == res["timestamp"]:
+            status = res["status"]
+            if status == "idle":
+                return res
+            else:
+                await asyncio.sleep(1)
+
+
+async def __wait_result_music(name, start_time, getFuc):
+    while True:
+        res = getFuc()
+        if res['data']['name'] == "":
+            return res
+        if res['data']['status'] == 'run' and res['data']['name'] == name:
+            await asyncio.sleep(1)
+        else:
+            return res
+
+
+async def __wait_result_motion(name, start_time, getFuc):
+    while True:
+        res = getFuc()
+        if res['data']['name'] == "":
+            return res
+        if res['data']['status'] == 'run' and start_time == res['data']['timestamp']:
+            await asyncio.sleep(1)
+        else:
+            return res
+
+
+async def __wait_result_layer_motion(name, start_time, getFuc):
+    while True:
+        res = getFuc()
+        find = False
+        for i in range(len(res["data"])):
+            if res['data'][i]['name'] == str(name + ".layers"):
+                if res['data'][i]['status'] == 'run' and start_time == res['data'][i]['timestamp']:
+                    await asyncio.sleep(1)
+                else:
+                    return res
+        if find == False:
+            return res
+
+
+async def __wait_result_by_time(time):
+    await asyncio.sleep(time)
+
+
+async def __wait_result_color(type, color, mode, getFuc):
+    while True:
+        res = getFuc()
+        for item in res['data']:
+            if item['type'] == type and item['color'] == color and item['mode'] == mode:
+                return res
+        await asyncio.sleep(1)
+
+
+async def __wait_result_gait(start_time, type, getFuc):
+    while True:
+        res = getFuc()
+        if res['data']['timestamp'] == start_time:
+            if type == "start":
+                if 0 <= res['data']['status'] <= 2:
+                    await asyncio.sleep(1)
+                else:
+                    return res
+        elif res['data']['timestamp'] > start_time:
+            return res
+
+
+def __resIsSuccess(res):
+    if not isinstance(res, Dict):
+        return False
+    if "code" not in res:
+        return False
+    return res["code"] == 0
