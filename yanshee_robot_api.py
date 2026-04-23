@@ -868,3 +868,175 @@ def set_servos_mode(mode: str, servos: List[str]):
     response = requests.put(url=servos_url, data=json_data, headers=headers)
     res = json.loads(str(response.content.decode("utf-8")))
     return res
+
+
+# ──────────────────────────────────────────────────────────────
+# Part 8: Sensor reading
+# ──────────────────────────────────────────────────────────────
+
+def sensor_calibration(id: int):
+    __set_sensors(operation="Calibrate", type="gyro", id=id)
+
+
+def __set_sensors(operation: str, id: int, type: str, value: int = 0):
+    sensors_url = basic_url + "sensors"
+    param = {"operation": operation, "sensor":
+             {"id": id, "type": type, "value": value}}
+    json_data = json.dumps(param)
+    response = requests.put(url=sensors_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_sensors_list_value():
+    sensor_url = basic_url + "sensors/list"
+    response = requests.get(url=sensor_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    if not __resIsSuccess(res):
+        return []
+    sensors = res["data"]["sensors"]
+    sensorsName = []
+    for sensor in sensors:
+        sensorName = sensor.get("type")
+        if sensorName:
+            sensorsName.append(sensorName)
+    return sensorsName
+
+
+def get_sensors_list():
+    sensor_url = basic_url + "sensors/list"
+    response = requests.get(url=sensor_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_sensors_environment_value():
+    res = get_sensors_environment()
+    if not __resIsSuccess(res):
+        return "获取环境传感器值失败！"
+    values = res["data"]["environment"]
+    if len(values) == 0:
+        return "没有连接到传感器！"
+    return values[0]
+
+
+def get_sensors_environment():
+    sensor_url = basic_url + "sensors/environment"
+    response = requests.get(url=sensor_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_sensors_gyro():
+    sensor_url = basic_url + "sensors/gyro"
+    response = requests.get(url=sensor_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_sensors_infrared_value():
+    res = get_sensors_infrared()
+    if not __resIsSuccess(res):
+        return "获取红外距离传感器值失败！"
+    values = res["data"]["infrared"]
+    if len(values) == 0:
+        return "没有连接到传感器！"
+    return values[0]["value"]
+
+
+def get_sensors_infrared(id: List[int] = None, slot: List[int] = None):
+    sensor_url = basic_url + "sensors/infrared"
+    if (id is not None) and (slot is None):
+        params = {"id": id}
+        response = requests.get(url=sensor_url, headers=headers, params=params)
+    elif (id is None) and (slot is not None):
+        params = {"slot": slot}
+        response = requests.get(url=sensor_url, headers=headers, params=params)
+    elif (id is not None) and (slot is not None):
+        params = {"id": id, "slot": slot}
+        response = requests.get(url=sensor_url, headers=headers, params=params)
+    else:
+        response = requests.get(url=sensor_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_sensors_pressure_value():
+    res = get_sensors_pressure()
+    if not __resIsSuccess(res):
+        return "获取压力传感器值失败！"
+    values = res["data"]["pressure"]
+    if len(values) == 0:
+        return "没有连接到传感器！"
+    return values[0]["value"]
+
+
+def get_sensors_pressure(id: List[int] = None, slot: List[int] = None):
+    sensor_url = basic_url + "sensors/pressure"
+    if (id is not None) and (slot is None):
+        params = {"id": id}
+        response = requests.get(url=sensor_url, headers=headers, params=params)
+    elif (id is None) and (slot is not None):
+        params = {"slot": slot}
+        response = requests.get(url=sensor_url, headers=headers, params=params)
+    elif (id is not None) and (slot is not None):
+        params = {"id": id, "slot": slot}
+        response = requests.get(url=sensor_url, headers=headers, params=params)
+    else:
+        response = requests.get(url=sensor_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_sensors_touch_value():
+    res = get_sensors_touch()
+    if not __resIsSuccess(res):
+        return "获取压力传感器值失败！"
+    values = res["data"]["touch"]
+    if len(values) == 0:
+        return "没有连接到传感器！"
+    return values[0]["value"]
+
+
+def get_sensors_touch(id: int = None, slot: List[int] = None):
+    sensor_url = basic_url + "sensors/touch"
+    if (id is not None) and (slot is None):
+        params = {"id": id}
+        response = requests.get(url=sensor_url, headers=headers, params=params)
+    elif (id is None) and (slot is not None):
+        params = {"slot": slot}
+        response = requests.get(url=sensor_url, headers=headers, params=params)
+    elif (id is not None) and (slot is not None):
+        params = {"id": id, "slot": slot}
+        response = requests.get(url=sensor_url, headers=headers, params=params)
+    else:
+        response = requests.get(url=sensor_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_sensors_ultrasonic_value():
+    res = get_sensors_ultrasonic()
+    if not __resIsSuccess(res):
+        return "获取超声传感器值失败！"
+    values = res["data"]["ultrasonic"]
+    if len(values) == 0:
+        return "没有连接到传感器！"
+    return values[0]["value"]
+
+
+def get_sensors_ultrasonic(id=None, slot=None):
+    sensor_url = basic_url + "sensors/ultrasonic"
+    if (id is not None) and (slot is None):
+        params = {"id": id}
+        response = requests.get(url=sensor_url, headers=headers, params=params)
+    elif (id is None) and (slot is not None):
+        params = {"slot": slot}
+        response = requests.get(url=sensor_url, headers=headers, params=params)
+    elif (id is not None) and (slot is not None):
+        params = {"id": id, "slot": slot}
+        response = requests.get(url=sensor_url, headers=headers, params=params)
+    else:
+        response = requests.get(url=sensor_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
