@@ -1,4 +1,5 @@
 import time
+import os
 
 from yanshee_robot_api import (
     RobotBuiltInMotion,
@@ -10,7 +11,7 @@ from yanshee_robot_api import (
 
 
 # Robot API endpoint IP.
-ROBOT_IP = "192.168.1.163"
+ROBOT_IP = os.getenv("YAN_ROBOT_IP", "192.168.1.163")
 
 
 DANCE_STEPS = [
@@ -26,6 +27,7 @@ DANCE_STEPS = [
 
 
 def run_one_minute_dance(duration_seconds: int = 60) -> bool:
+    """Initialize robot API and run dance motions for about one minute."""
     try:
         yan_api_init(ROBOT_IP)
     except Exception as exc:
