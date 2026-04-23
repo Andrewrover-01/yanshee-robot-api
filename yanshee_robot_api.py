@@ -520,8 +520,7 @@ def sync_set_led(type: str, color: str, mode: str):
         return False
     coroutine = __wait_result_color(type=type, color=color, mode=mode, getFuc=get_robot_led)
     loop = asyncio.get_event_loop()
-    tasks = loop.create_task(coroutine)
-    loop.run_until_complete(tasks)
+    loop.run_until_complete(coroutine)
     return True
 
 
@@ -647,8 +646,7 @@ def sync_play_music(name: str = ""):
         return False
     coroutine = __wait_result_music(name=name, start_time=None, getFuc=get_media_music_state)
     loop = asyncio.get_event_loop()
-    tasks = loop.create_task(coroutine)
-    loop.run_until_complete(tasks)
+    loop.run_until_complete(coroutine)
     return True
 
 
@@ -716,8 +714,7 @@ def sync_play_motion(name: str = "reset", direction: str = "", speed: str = "nor
     elif version == "v2":
         coroutine = __wait_result_layer_motion(name=name, start_time=t, getFuc=get_current_layer_motion_play_state)
     loop = asyncio.get_event_loop()
-    tasks = loop.create_task(coroutine)
-    loop.run_until_complete(tasks)
+    loop.run_until_complete(coroutine)
     return True
 
 
@@ -798,8 +795,7 @@ def sync_do_motion_gait(speed_v: int = 0, speed_h: int = 0, steps: int = 0, peri
         return False
     coroutine = __wait_result_gait(start_time=t, type='start', getFuc=get_motion_gait_state)
     loop = asyncio.get_event_loop()
-    tasks = loop.create_task(coroutine)
-    loop.run_until_complete(tasks)
+    loop.run_until_complete(coroutine)
     return True
 
 
@@ -846,8 +842,7 @@ def sync_set_servo_rotate(angles: Dict[str, int], runtime: int = 200):
         return res
     coroutine = __wait_result_by_time(runtime / 1000)
     loop = asyncio.get_event_loop()
-    tasks = loop.create_task(coroutine)
-    loop.run_until_complete(tasks)
+    loop.run_until_complete(coroutine)
     return res
 
 
@@ -1067,9 +1062,7 @@ def sync_do_color_recognition():
     coroutine = __wait_result_common(timestamp=timestamp, getFuc=get_visual_task_result,
                                      args=("color", "color_detect"))
     loop = asyncio.get_event_loop()
-    tasks = loop.create_task(coroutine)
-    loop.run_until_complete(tasks)
-    return tasks.result()
+    return loop.run_until_complete(coroutine)
 
 
 def start_object_recognition(timestamp: int = 0):
@@ -1093,9 +1086,7 @@ def sync_do_object_recognition():
     coroutine = __wait_result_common(timestamp=timestamp, getFuc=get_visual_task_result,
                                      args=("object", "recognition"))
     loop = asyncio.get_event_loop()
-    tasks = loop.create_task(coroutine)
-    loop.run_until_complete(tasks)
-    return tasks.result()
+    return loop.run_until_complete(coroutine)
 
 
 def do_face_entry(name: str):
@@ -1573,9 +1564,7 @@ class Voice(object):
             return ""
         coroutine = self.__wait_result(timestamp, self.get_voice_asr)
         loop = asyncio.get_event_loop()
-        task = loop.create_task(coroutine)
-        loop.run_until_complete(task)
-        res = task.result()
+        res = loop.run_until_complete(coroutine)
         if not self.__resIsSuccess(res):
             return ""
         words = res["data"].get("text", {}).get("ws", [])
@@ -1591,9 +1580,7 @@ class Voice(object):
             return res
         coroutine = self.__wait_result_common(timestamp=t, getFuc=self.get_voice_tts_state, args=(t,))
         loop = asyncio.get_event_loop()
-        tasks = loop.create_task(coroutine)
-        loop.run_until_complete(tasks)
-        return tasks.result()
+        return loop.run_until_complete(coroutine)
 
     async def __wait_result(self, timestamp, getFuc):
         while True:
