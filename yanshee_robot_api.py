@@ -1040,3 +1040,279 @@ def get_sensors_ultrasonic(id=None, slot=None):
         response = requests.get(url=sensor_url, headers=headers)
     res = json.loads(str(response.content.decode("utf-8")))
     return res
+
+
+# ──────────────────────────────────────────────────────────────
+# Part 9: Vision recognition and photo management
+# ──────────────────────────────────────────────────────────────
+
+def start_color_recognition(timestamp: int = 0):
+    """开始颜色识别"""
+    return __control_visual_task(option='color', type="color_detect", operation='start', timestamp=timestamp)
+
+
+def stop_color_recognition(timestamp: int = 0):
+    """停止颜色识别"""
+    return __control_visual_task(option='color', type="color_detect", operation='stop', timestamp=timestamp)
+
+
+def sync_do_color_recognition():
+    """执行颜色识别,识别完成后返回"""
+    timestamp = int(time.time())
+    res = start_color_recognition(timestamp)
+    if res['code'] != 0:
+        logging.error("do color recognition failed error code = %d msg = %s",
+                      res.get("code", -1), res.get("msg", "unknow error"))
+        return res
+    coroutine = __wait_result_common(timestamp=timestamp, getFuc=get_visual_task_result,
+                                     args=("color", "color_detect"))
+    loop = asyncio.get_event_loop()
+    tasks = loop.create_task(coroutine)
+    loop.run_until_complete(tasks)
+    return tasks.result()
+
+
+def start_object_recognition(timestamp: int = 0):
+    """开始物体识别"""
+    return __control_visual_task(option='object', type="recognition", operation='start', timestamp=timestamp)
+
+
+def stop_object_recognition(timestamp: int = 0):
+    """停止物体识别"""
+    return __control_visual_task(option='object', type="recognition", operation='stop', timestamp=timestamp)
+
+
+def sync_do_object_recognition():
+    """执行物体识别,识别完成后返回"""
+    timestamp = int(time.time())
+    res = start_object_recognition(timestamp)
+    if res['code'] != 0:
+        logging.error("do object recognition failed error code = %d msg = %s",
+                      res.get("code", -1), res.get("msg", "unknow error"))
+        return res
+    coroutine = __wait_result_common(timestamp=timestamp, getFuc=get_visual_task_result,
+                                     args=("object", "recognition"))
+    loop = asyncio.get_event_loop()
+    tasks = loop.create_task(coroutine)
+    loop.run_until_complete(tasks)
+    return tasks.result()
+
+
+def do_face_entry(name: str):
+    """进行人脸录入"""
+    res = take_vision_photo()
+    if not __resIsSuccess(res):
+        logging.error("do face entry failed error code = %d msg = %s",
+                      res.get("code", -1), res.get("msg", "unknow error"))
+        return False
+    path = "./"
+    get_vision_photo(res["data"]["name"], path)
+    photo = path + res["data"]["name"]
+    photo_name = res["data"]["name"]
+    res = upload_vision_photo_sample(photo)
+    if os.path.exists(photo) and os.path.isfile(photo):
+        os.remove(photo)
+    if not __resIsSuccess(res):
+        logging.error("do face entry failed error code = %d msg = %s",
+                      res.get("code", -1), res.get("msg", "unknow error"))
+        return False
+    res = set_vision_tag([photo_name], name)
+    if not __resIsSuccess(res):
+        logging.error("do face entry failed error code = %d msg = %s",
+                      res.get("code", -1), res.get("msg", "unknow error"))
+        return False
+    return True
+
+
+def delete_vision_photo(name: str):
+    """删除指定名称的图片"""
+    visions_url = basic_url + "visions/photos"
+    param = {"name": name}
+    json_data = json.dumps(param)
+    response = requests.delete(url=visions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_vision_photo(name: str, savePath: str = "./"):
+    """获取指定名称的照片"""
+    visions_url = basic_url + "visions/photos"
+    params = {'body': name}
+    response = requests.get(url=visions_url, headers=headers, params=params)
+    res = response.content
+    with open(savePath + name, "wb") as fp:
+        fp.write(res)
+    return res
+
+
+def take_vision_photo(resolution: str = "640x480"):
+    """拍一张照片"""
+    visions_url = basic_url + "visions/photos"
+    param = {"resolution": resolution}
+    json_data = json.dumps(param)
+    response = requests.post(url=visions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_vision_photo_list():
+    """获取机器人照片列表"""
+    visions_url = basic_url + "visions/photos/list"
+    response = requests.get(url=visions_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def delete_vision_photo_sample(name: str):
+    """删除指定名称的样本照片"""
+    visions_url = basic_url + "visions/photosamples"
+    param = {"name": name}
+    json_data = json.dumps(param)
+    response = requests.delete(url=visions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_vision_photo_samples():
+    """获取样本照片列表"""
+    visions_url = basic_url + "visions/photosamples"
+    response = requests.get(url=visions_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def upload_vision_photo_sample(filePath: str):
+    """上传样本图片到特定文件夹"""
+    visions_url = basic_url + "visions/photosamples"
+    upload_headers = {'Authorization': 'multipart/form-data'}
+    files = {'file': open(filePath, 'rb')}
+    response = requests.post(url=visions_url, files=files, headers=upload_headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def open_vision_stream(resolution: str = "640x480"):
+    """打开摄像头网络视频流"""
+    visions_url = basic_url + "visions/streams"
+    param = {"resolution": resolution}
+    json_data = json.dumps(param)
+    response = requests.post(url=visions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def close_vision_stream():
+    """关闭摄像头网络视频流"""
+    visions_url = basic_url + "visions/streams"
+    response = requests.delete(url=visions_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def delete_vision_tag(tag: str, mode: str = "all"):
+    """删除指定标签"""
+    visions_url = basic_url + "visions/tags"
+    param = {"tags": tag, "mode": mode}
+    json_data = json.dumps(param)
+    response = requests.delete(url=visions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def get_vision_tags():
+    """获取样本标签列表"""
+    visions_url = basic_url + "visions/tags"
+    response = requests.get(url=visions_url, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def set_vision_tag(resources: List[str], tag: str):
+    """给已有样本图片打标签"""
+    visions_url = basic_url + "visions/tags"
+    param = {"resources": resources, "tags": tag}
+    json_data = json.dumps(param)
+    response = requests.put(url=visions_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    return res
+
+
+def do_visions_visible(operation, task):
+    """开启或关闭视觉任务视频流"""
+    vision_visible_url = basic_url + "visions_visible"
+    param = {"operation": operation, "type": task}
+    json_data = json.dumps(param)
+    response = requests.put(url=vision_visible_url, data=json_data, headers=headers)
+    res = json.loads(str(response.content.decode("utf-8")))
+    if operation == 'start':
+        try:
+            print("url --> %s" % res['data']['url'])
+        except Exception:
+            pass
+    return res
+
+
+def show_visions_result(operation):
+    """显示视觉任务视频流"""
+    global ip
+    counter = 0
+    try:
+        res = do_visions_visible('start', operation)
+        if res['code'] == 20003:
+            if ip != "127.0.0.1":
+                port = res['data']['url'][7:][res['data']['url'][7:].find(':') + 1:]
+                url = "http://" + ip + ":" + port
+            else:
+                url = res['data']['url']
+        elif res['code'] == 0:
+            url = res['data']['url']
+        else:
+            print(res['msg'])
+            return
+    except Exception:
+        cv2.destroyAllWindows()
+        cv2.waitKey(1)
+        do_visions_visible('stop', operation)
+        return
+    camera = cv2.VideoCapture(url)
+    ret = camera.isOpened()
+    if not ret:
+        cv2.destroyAllWindows()
+        cv2.waitKey(1)
+        do_visions_visible('stop', operation)
+        return
+    try:
+        while ret:
+            ret, frame = camera.read()
+            if not ret:
+                if counter > 2:
+                    cv2.destroyAllWindows()
+                    cv2.waitKey(1)
+                    camera.release()
+                    exit(0)
+                else:
+                    cv2.destroyAllWindows()
+                    cv2.waitKey(1)
+                    camera.release()
+                    counter += 1
+                    try:
+                        res = do_visions_visible('start', operation)
+                        url = res['data']['url']
+                        ret = 1
+                    except Exception:
+                        exit(0)
+                    camera = cv2.VideoCapture(url)
+                    continue
+            else:
+                counter = 0
+            cv2.imshow(operation, frame)
+            cv2.waitKey(1)
+            if cv2.getWindowProperty(operation, cv2.WND_PROP_VISIBLE) <= 0:
+                break
+        cv2.destroyAllWindows()
+        cv2.waitKey(1)
+        do_visions_visible('stop', operation)
+    except Exception:
+        cv2.destroyAllWindows()
+        cv2.waitKey(1)
+        do_visions_visible('stop', operation)
