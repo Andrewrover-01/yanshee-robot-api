@@ -77,12 +77,12 @@ def dance():
     # 向前再走一步
     print("执行动作: walk direction=forward repeat=1")
     YanAPI.sync_play_motion("walk", direction="forward", repeat=1)
-    # 向右转，回到原方向
-    print("执行动作: turn around direction=right")
-    YanAPI.sync_play_motion("turn around", direction="right")
-    # 向后退一步
-    print("执行动作: walk direction=backward repeat=1")
-    YanAPI.sync_play_motion("walk", direction="backward", repeat=1)
+    # 向右挥手（原 turn around direction=right 会导致机器人倒地，改用稳定的 wave）
+    print("执行动作: wave direction=right")
+    YanAPI.sync_play_motion("wave", direction="right")
+    # 向前走一步（原 walk direction=backward 会导致机器人倒地，改用稳定的 forward）
+    print("执行动作: walk direction=forward repeat=1")
+    YanAPI.sync_play_motion("walk", direction="forward", repeat=1)
 
     # ── 第四段：律动 ──────────────────────────────────────────
     YanAPI.set_robot_led("button", "yellow", "blink")
