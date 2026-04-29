@@ -103,10 +103,10 @@ def dance():
     print("执行动作: raise direction=both")
     YanAPI.sync_play_motion("raise", direction="both")
     # 侧步律动
-    print("执行动作: walk direction=left repeat=1")
-    YanAPI.sync_play_motion("walk", direction="left", repeat=1)
-    print("执行动作: walk direction=right repeat=1")
-    YanAPI.sync_play_motion("walk", direction="right", repeat=1)
+    print("执行动作: walk direction=left repeat=2")
+    YanAPI.sync_play_motion("walk", direction="left", repeat=2)
+    print("执行动作: walk direction=right repeat=2")
+    YanAPI.sync_play_motion("walk", direction="right", repeat=2)
 
     # ── 第五段：头部律动 ──────────────────────────────────────
     YanAPI.set_robot_led("button", "cyan", "breath")
