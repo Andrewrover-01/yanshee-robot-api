@@ -7,7 +7,7 @@
 import YanAPI
 import time
 
-ROBOT_IP = "192.168.1.163"
+ROBOT_IP = "192.168.1.115"
 
 
 def dance():
@@ -33,11 +33,11 @@ def dance():
     print("执行动作: wave direction=both")
     YanAPI.sync_play_motion("wave", direction="both")
 
-    # 腿部动作：向前走两步再向后退两步
-    print("执行动作: walk direction=forward repeat=2")
-    YanAPI.sync_play_motion("walk", direction="forward", repeat=2)
-    print("执行动作: walk direction=backward repeat=2")
-    YanAPI.sync_play_motion("walk", direction="backward", repeat=2)
+    # 腿部动作：向前走一步再向后退一步
+    print("执行动作: walk direction=forward repeat=1")
+    YanAPI.sync_play_motion("walk", direction="forward", repeat=1)
+    print("执行动作: walk direction=backward repeat=1")
+    YanAPI.sync_play_motion("walk", direction="backward", repeat=1)
 
     # 腿部动作：蹲下再站起
     print("执行动作: crouch")
@@ -59,30 +59,30 @@ def dance():
     # 双臂加油
     print("执行动作: come on direction=both")
     YanAPI.sync_play_motion("come on", direction="both")
-    # 侧步：向左两步再向右两步
-    print("执行动作: walk direction=left repeat=2")
-    YanAPI.sync_play_motion("walk", direction="left", repeat=2)
-    print("执行动作: walk direction=right repeat=2")
-    YanAPI.sync_play_motion("walk", direction="right", repeat=2)
+    # 侧步：向左一步再向右一步
+    print("执行动作: walk direction=left repeat=1")
+    YanAPI.sync_play_motion("walk", direction="left", repeat=1)
+    print("执行动作: walk direction=right repeat=1")
+    YanAPI.sync_play_motion("walk", direction="right", repeat=1)
 
     # ── 第三段：步伐 ──────────────────────────────────────────
     YanAPI.set_robot_led("button", "purple", "breath")
 
-    # 向前走三步
-    print("执行动作: walk direction=forward repeat=3")
-    YanAPI.sync_play_motion("walk", direction="forward", repeat=3)
+    # 向前走一步
+    print("执行动作: walk direction=forward repeat=1")
+    YanAPI.sync_play_motion("walk", direction="forward", repeat=1)
     # 向左转
     print("执行动作: turn around direction=left")
     YanAPI.sync_play_motion("turn around", direction="left")
-    # 向前再走三步
-    print("执行动作: walk direction=forward repeat=3")
-    YanAPI.sync_play_motion("walk", direction="forward", repeat=3)
+    # 向前再走一步
+    print("执行动作: walk direction=forward repeat=1")
+    YanAPI.sync_play_motion("walk", direction="forward", repeat=1)
     # 向右转，回到原方向
     print("执行动作: turn around direction=right")
     YanAPI.sync_play_motion("turn around", direction="right")
-    # 向后退两步
-    print("执行动作: walk direction=backward repeat=2")
-    YanAPI.sync_play_motion("walk", direction="backward", repeat=2)
+    # 向后退一步
+    print("执行动作: walk direction=backward repeat=1")
+    YanAPI.sync_play_motion("walk", direction="backward", repeat=1)
 
     # ── 第四段：律动 ──────────────────────────────────────────
     YanAPI.set_robot_led("button", "yellow", "blink")
@@ -103,10 +103,10 @@ def dance():
     print("执行动作: raise direction=both")
     YanAPI.sync_play_motion("raise", direction="both")
     # 侧步律动
-    print("执行动作: walk direction=left repeat=2")
-    YanAPI.sync_play_motion("walk", direction="left", repeat=2)
-    print("执行动作: walk direction=right repeat=2")
-    YanAPI.sync_play_motion("walk", direction="right", repeat=2)
+    print("执行动作: walk direction=left repeat=1")
+    YanAPI.sync_play_motion("walk", direction="left", repeat=1)
+    print("执行动作: walk direction=right repeat=1")
+    YanAPI.sync_play_motion("walk", direction="right", repeat=1)
 
     # ── 第五段：头部律动 ──────────────────────────────────────
     YanAPI.set_robot_led("button", "cyan", "breath")
@@ -117,10 +117,6 @@ def dance():
     YanAPI.sync_play_motion("head", direction="right")
     print("执行动作: head direction=forward")
     YanAPI.sync_play_motion("head", direction="forward")
-    print("执行动作: head direction=left")
-    YanAPI.sync_play_motion("head", direction="left")
-    print("执行动作: head direction=right")
-    YanAPI.sync_play_motion("head", direction="right")
 
     # ── 第六段：综合展示 ──────────────────────────────────────
     YanAPI.set_robot_led("button", "red", "breath")
@@ -128,8 +124,8 @@ def dance():
     # 双臂举起 + 向前走 + 挥手
     print("执行动作: raise direction=both")
     YanAPI.sync_play_motion("raise", direction="both")
-    print("执行动作: walk direction=forward repeat=2")
-    YanAPI.sync_play_motion("walk", direction="forward", repeat=2)
+    print("执行动作: walk direction=forward repeat=1")
+    YanAPI.sync_play_motion("walk", direction="forward", repeat=1)
     print("执行动作: wave direction=both")
     YanAPI.sync_play_motion("wave", direction="both")
     # 转圈 + 加油 + 伸展
