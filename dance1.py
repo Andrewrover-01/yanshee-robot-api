@@ -10,6 +10,12 @@ import time
 ROBOT_IP = "192.168.1.115"
 
 
+GAIT_STATUS_EXITED = 7  # Already exit gait ready state
+GAIT_STATUS_IDLE = 8    # Idle state (no gait task)
+GAIT_POLL_INTERVAL = 0.5  # seconds between status polls
+GAIT_TIMEOUT = 30  # seconds before giving up
+
+
 def march_in_place(steps: int = 4, period: int = 1):
     """抬腿静步走：原地抬腿踏步，speed_v=0、speed_h=0 保持不移动位置。
 
@@ -18,13 +24,15 @@ def march_in_place(steps: int = 4, period: int = 1):
         period: 步态周期，取值 1~5，数值越大节奏越慢。
     """
     YanAPI.control_motion_gait(speed_v=0, speed_h=0, steps=steps, period=period, wave=False)
-    time.sleep(0.5)  # 等待步态任务启动
-    while True:
+    time.sleep(GAIT_POLL_INTERVAL)  # 等待步态任务启动
+    elapsed = 0.0
+    while elapsed < GAIT_TIMEOUT:
         res = YanAPI.get_motion_gait_state()
-        status = res.get("data", {}).get("status", 8)
-        if status in (7, 8):  # 已退出步态就绪态 或 空闲
+        status = res.get("data", {}).get("status", GAIT_STATUS_IDLE)
+        if status in (GAIT_STATUS_EXITED, GAIT_STATUS_IDLE):
             break
-        time.sleep(0.5)
+        time.sleep(GAIT_POLL_INTERVAL)
+        elapsed += GAIT_POLL_INTERVAL
 
 
 def dance():
