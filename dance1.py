@@ -10,6 +10,60 @@ import time
 ROBOT_IP = "192.168.1.203"
 
 
+def leg_raise_march_with_arms():
+    """抬腿静步走：每迈一步配合手部摆动动作，模拟自然行进中的手臂协调摆动效果。
+
+    通过交替调用 walk（迈步）和 wave/raise/come on（手部动作）实现：
+      节拍1  左手挥手 + 向前迈步
+      节拍2  右手挥手 + 向前迈步
+      节拍3  左臂举起 + 向前迈步
+      节拍4  右臂举起 + 向前迈步
+      节拍5  双手加油 + 向前迈步
+      节拍6  左手挥手 + 向前迈步
+      收尾    双手挥手 + 后退回位
+    """
+    # 节拍1：左手挥手 → 迈步
+    print("抬腿静步走 节拍1: wave left")
+    YanAPI.sync_play_motion("wave", direction="left")
+    print("抬腿静步走 节拍1: walk forward")
+    YanAPI.sync_play_motion("walk", direction="forward", repeat=1)
+
+    # 节拍2：右手挥手 → 迈步
+    print("抬腿静步走 节拍2: wave right")
+    YanAPI.sync_play_motion("wave", direction="right")
+    print("抬腿静步走 节拍2: walk forward")
+    YanAPI.sync_play_motion("walk", direction="forward", repeat=1)
+
+    # 节拍3：左臂举起 → 迈步
+    print("抬腿静步走 节拍3: raise left")
+    YanAPI.sync_play_motion("raise", direction="left")
+    print("抬腿静步走 节拍3: walk forward")
+    YanAPI.sync_play_motion("walk", direction="forward", repeat=1)
+
+    # 节拍4：右臂举起 → 迈步
+    print("抬腿静步走 节拍4: raise right")
+    YanAPI.sync_play_motion("raise", direction="right")
+    print("抬腿静步走 节拍4: walk forward")
+    YanAPI.sync_play_motion("walk", direction="forward", repeat=1)
+
+    # 节拍5：双手加油 → 迈步
+    print("抬腿静步走 节拍5: come on both")
+    YanAPI.sync_play_motion("come on", direction="both")
+    print("抬腿静步走 节拍5: walk forward")
+    YanAPI.sync_play_motion("walk", direction="forward", repeat=1)
+
+    # 节拍6：左手再次挥手 → 迈步
+    print("抬腿静步走 节拍6: wave left")
+    YanAPI.sync_play_motion("wave", direction="left")
+    print("抬腿静步走 节拍6: walk forward")
+    YanAPI.sync_play_motion("walk", direction="forward", repeat=1)
+
+    # 收尾：双手挥手 + 后退回位
+    print("抬腿静步走 收尾: wave both + walk backward")
+    YanAPI.sync_play_motion("wave", direction="both")
+    YanAPI.sync_play_motion("walk", direction="backward", repeat=6)
+
+
 def dance():
     # 初始化 API
     YanAPI.yan_api_init(ROBOT_IP)
@@ -39,15 +93,9 @@ def dance():
     print("执行动作: walk direction=backward repeat=1")
     YanAPI.sync_play_motion("walk", direction="backward", repeat=1)
 
-    # 抬腿静步走（使用步态控制实现）
-    print("执行步态动作: 抬腿静步走 - 缓慢前行")
-    YanAPI.sync_do_motion_gait(speed_v=2, speed_h=0, steps=5, period=2, wave=True)
-    print("执行步态动作: 抬腿静步走 - 缓慢后退")
-    YanAPI.sync_do_motion_gait(speed_v=-2, speed_h=0, steps=5, period=2, wave=True)
-    print("执行步态动作: 抬腿静步走 - 缓慢左侧移")
-    YanAPI.sync_do_motion_gait(speed_v=0, speed_h=2, steps=5, period=2, wave=True)
-    print("执行步态动作: 抬腿静步走 - 缓慢右侧移")
-    YanAPI.sync_do_motion_gait(speed_v=0, speed_h=-2, steps=5, period=2, wave=True)
+    # 抬腿静步走（手动实现：迈步配合手部动作）
+    print("执行抬腿静步走动作组合")
+    leg_raise_march_with_arms()
 
     # 腿部动作：蹲下再站起
     print("执行动作: crouch")
@@ -127,6 +175,12 @@ def dance():
     YanAPI.sync_play_motion("head", direction="right")
     print("执行动作: head direction=forward")
     YanAPI.sync_play_motion("head", direction="forward")
+
+    # 后仰动作：双臂高举，躯干自然后倾，再复位
+    print("执行动作: 后仰 - raise direction=both")
+    YanAPI.sync_play_motion("raise", direction="both")
+    print("执行动作: 后仰复位 - reset")
+    YanAPI.sync_play_motion("reset")
 
     # ── 第六段：综合展示 ──────────────────────────────────────
     YanAPI.set_robot_led("button", "red", "breath")
