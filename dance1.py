@@ -15,33 +15,62 @@ GAIT_STATUS_IDLE = 8    # Idle state (no gait task)
 GAIT_POLL_INTERVAL = 0.5  # seconds between status polls
 GAIT_TIMEOUT = 30  # seconds before giving up
 
-FALL_EULER_THRESHOLD = 45.0  # degrees; |euler-x| or |euler-y| > this => fallen
-FALL_RECOVER_WAIT = 3.0       # seconds to wait after issuing reset to let robot stand
+FALL_EULER_THRESHOLD = 65.0  # degrees; |euler-x| or |euler-y| > this => fallen
+                              # 提高至 65° 以避免正常舞蹈动作（弯腰、走步等）被误判为摔倒
+FALL_CONFIRM_SAMPLES = 3      # 连续读取次数；所有读数均超阈值才判定为摔倒（去抖动）
+FALL_CONFIRM_DELAY = 0.1      # seconds between confirmation reads
+FALL_RECOVER_WAIT = 6.0       # seconds to wait after issuing reset to let robot stand
+                              # 延长至 6 s，给机器人足够时间从地面完成站起动作
 FALL_MAX_RETRIES = 3          # maximum recovery attempts before giving up
+
+
+def _read_euler():
+    """从陀螺仪读取一次 Euler 角，返回 (pitch, roll) 元组。
+
+    Yanshee 陀螺仪坐标约定：euler-x 为俯仰角（前后倾斜），euler-y 为横滚角（左右倾斜）。
+
+    Returns:
+        tuple[float, float]: (pitch, roll) 角度值，单位为度；读取失败时返回 (0.0, 0.0)。
+    """
+    try:
+        res = YanAPI.get_sensors_gyro()
+        gyro_list = res.get("data", {}).get("gyro", [])
+        if gyro_list:
+            sensor = gyro_list[0]
+            return sensor.get("euler-x", 0.0), sensor.get("euler-y", 0.0)
+    except Exception:
+        pass
+    return 0.0, 0.0
 
 
 def is_robot_fallen() -> bool:
     """通过陀螺仪 Euler 角判断机器人是否摔倒。
 
+    连续读取 FALL_CONFIRM_SAMPLES 次传感器数据，只有**所有**读数均显示
+    俯仰角或横滚角超过 FALL_EULER_THRESHOLD 时才返回 True。
+    这样既避免了单次传感器波动导致的误判，也避免了机器人在正常动作过程中
+    因暂时倾斜而被误认为摔倒。
+
     Returns:
-        bool: True 表示机器人已摔倒（俯仰角或横滚角超过阈值），False 表示正常站立。
+        bool: True 表示机器人已确认摔倒，False 表示正常站立或数据不足。
     """
-    try:
-        res = YanAPI.get_sensors_gyro()
-        gyro_list = res.get("data", {}).get("gyro", [])
-        if not gyro_list:
-            return False
-        sensor = gyro_list[0]
-        # Yanshee 陀螺仪坐标约定：euler-x 为俯仰角（前后倾斜），euler-y 为横滚角（左右倾斜）
-        pitch = sensor.get("euler-x", 0.0)  # 俯仰角
-        roll = sensor.get("euler-y", 0.0)   # 横滚角
-        return abs(pitch) > FALL_EULER_THRESHOLD or abs(roll) > FALL_EULER_THRESHOLD
-    except Exception:
-        return False
+    fallen_count = 0
+    for i in range(FALL_CONFIRM_SAMPLES):
+        pitch, roll = _read_euler()
+        if abs(pitch) > FALL_EULER_THRESHOLD or abs(roll) > FALL_EULER_THRESHOLD:
+            fallen_count += 1
+        if i < FALL_CONFIRM_SAMPLES - 1:
+            time.sleep(FALL_CONFIRM_DELAY)
+    # 只有所有采样均超过阈值，才确认摔倒
+    return fallen_count >= FALL_CONFIRM_SAMPLES
 
 
 def recover_from_fall():
     """检测到机器人摔倒后尝试站起，最多重试 FALL_MAX_RETRIES 次。
+
+    根据摔倒方向（euler-x 正值 → 前倒，负值 → 后倒）打印提示，
+    之后调用 YanAPI.sync_play_motion("reset") 执行站起动作，
+    并等待 FALL_RECOVER_WAIT 秒确认恢复。
 
     注意：此函数直接调用 YanAPI.sync_play_motion("reset") 而非 safe_play_motion，
     以避免与 safe_play_motion → recover_from_fall 之间产生无限递归。
@@ -50,11 +79,24 @@ def recover_from_fall():
         bool: True 表示恢复成功，False 表示多次尝试后仍未站起。
     """
     for attempt in range(1, FALL_MAX_RETRIES + 1):
-        print(f"检测到机器人摔倒，尝试站起（第 {attempt} 次）...")
+        # 读取摔倒方向，辅助调试（仅在角度明显偏离时才推断方向）
+        pitch, roll = _read_euler()
+        if abs(pitch) > FALL_EULER_THRESHOLD or abs(roll) > FALL_EULER_THRESHOLD:
+            if abs(pitch) >= abs(roll):
+                direction = "前方" if pitch > 0 else "后方"
+            else:
+                direction = "左侧" if roll > 0 else "右侧"
+        else:
+            direction = "未知方向"
+        print(f"检测到机器人向{direction}摔倒，尝试站起（第 {attempt} 次）...")
+
         YanAPI.sync_do_tts("检测到摔倒，正在站起")
         time.sleep(1.0)  # 等待机器人稳定后再发指令
+
+        # 执行复位动作，让机器人尝试站起
         YanAPI.sync_play_motion("reset")  # 直接调用，避免循环递归
-        time.sleep(FALL_RECOVER_WAIT)
+        time.sleep(FALL_RECOVER_WAIT)     # 等待站起动作完成
+
         if not is_robot_fallen():
             print("恢复站立成功，继续表演。")
             return True
