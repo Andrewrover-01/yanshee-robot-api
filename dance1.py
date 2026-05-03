@@ -176,6 +176,12 @@ def dance():
     print("执行动作: head direction=forward")
     YanAPI.sync_play_motion("head", direction="forward")
 
+    # 后仰动作：双臂高举，躯干自然后倾，再复位
+    print("执行动作: 后仰 - raise direction=both")
+    YanAPI.sync_play_motion("raise", direction="both")
+    print("执行动作: 后仰复位 - reset")
+    YanAPI.sync_play_motion("reset")
+
     # ── 第六段：综合展示 ──────────────────────────────────────
     YanAPI.set_robot_led("button", "red", "breath")
 
