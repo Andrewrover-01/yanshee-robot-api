@@ -28,7 +28,7 @@ from enum import Enum, unique
 
 
 basic_url = "http://127.0.0.1:9090/v1/"
-ip = "127.0.0.1"
+ip = "192.168.1.203"
 headers = {'Content-Type': 'application/json'}
 nest_asyncio.apply()
 
