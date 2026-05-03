@@ -10,6 +10,23 @@ import time
 ROBOT_IP = "192.168.1.115"
 
 
+def march_in_place(steps: int = 4, period: int = 1):
+    """抬腿静步走：原地抬腿踏步，speed_v=0、speed_h=0 保持不移动位置。
+
+    Args:
+        steps: 踏步总步数（正整数）。
+        period: 步态周期，取值 1~5，数值越大节奏越慢。
+    """
+    YanAPI.control_motion_gait(speed_v=0, speed_h=0, steps=steps, period=period, wave=False)
+    time.sleep(0.5)  # 等待步态任务启动
+    while True:
+        res = YanAPI.get_motion_gait_state()
+        status = res.get("data", {}).get("status", 8)
+        if status in (7, 8):  # 已退出步态就绪态 或 空闲
+            break
+        time.sleep(0.5)
+
+
 def dance():
     # 初始化 API
     YanAPI.yan_api_init(ROBOT_IP)
@@ -107,6 +124,10 @@ def dance():
     YanAPI.sync_play_motion("walk", direction="left", repeat=2)
     print("执行动作: walk direction=right repeat=2")
     YanAPI.sync_play_motion("walk", direction="right", repeat=2)
+
+    # 抬腿静步走：原地踏步 4 步，保持节奏
+    print("执行动作: 抬腿静步走 steps=4 period=1")
+    march_in_place(steps=4, period=1)
 
     # ── 第五段：头部律动 ──────────────────────────────────────
     YanAPI.set_robot_led("button", "cyan", "breath")
