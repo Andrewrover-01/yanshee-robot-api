@@ -32,6 +32,7 @@ def is_robot_fallen() -> bool:
         if not gyro_list:
             return False
         sensor = gyro_list[0]
+        # Yanshee 陀螺仪坐标约定：euler-x 为俯仰角（前后倾斜），euler-y 为横滚角（左右倾斜）
         pitch = sensor.get("euler-x", 0.0)  # 俯仰角
         roll = sensor.get("euler-y", 0.0)   # 横滚角
         return abs(pitch) > FALL_EULER_THRESHOLD or abs(roll) > FALL_EULER_THRESHOLD
@@ -42,6 +43,9 @@ def is_robot_fallen() -> bool:
 def recover_from_fall():
     """检测到机器人摔倒后尝试站起，最多重试 FALL_MAX_RETRIES 次。
 
+    注意：此函数直接调用 YanAPI.sync_play_motion("reset") 而非 safe_play_motion，
+    以避免与 safe_play_motion → recover_from_fall 之间产生无限递归。
+
     Returns:
         bool: True 表示恢复成功，False 表示多次尝试后仍未站起。
     """
@@ -49,7 +53,7 @@ def recover_from_fall():
         print(f"检测到机器人摔倒，尝试站起（第 {attempt} 次）...")
         YanAPI.sync_do_tts("检测到摔倒，正在站起")
         time.sleep(1.0)  # 等待机器人稳定后再发指令
-        YanAPI.sync_play_motion("reset")
+        YanAPI.sync_play_motion("reset")  # 直接调用，避免循环递归
         time.sleep(FALL_RECOVER_WAIT)
         if not is_robot_fallen():
             print("恢复站立成功，继续表演。")
@@ -93,7 +97,9 @@ def march_in_place(steps: int = 4, period: int = 1):
     while elapsed < GAIT_TIMEOUT:
         if is_robot_fallen():
             YanAPI.exit_motion_gait()
-            recover_from_fall()
+            if not recover_from_fall():
+                print("步态执行中摔倒且无法站起，终止踏步动作。")
+                return
             break
         res = YanAPI.get_motion_gait_state()
         status = res.get("data", {}).get("status", GAIT_STATUS_IDLE)
