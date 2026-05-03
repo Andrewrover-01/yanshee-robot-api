@@ -4,6 +4,7 @@
 机器人地址：192.168.1.163  账号：pi  密码：raspberry
 """
 
+import logging
 import threading
 import asyncio
 import YanAPI
@@ -18,18 +19,20 @@ def _run_motion_in_thread(name, kwargs):
     asyncio.set_event_loop(loop)
     try:
         YanAPI.sync_play_motion(name, **kwargs)
+    except Exception as e:
+        logging.error("motion '%s' failed in thread: %s", name, e)
     finally:
         loop.close()
 
 
-def play_parallel(arm_name, arm_kwargs, leg_name, leg_kwargs):
-    """同时执行手部动作和腿部动作，两个动作在独立线程中并行运行，全部完成后返回。"""
-    t_arm = threading.Thread(target=_run_motion_in_thread, args=(arm_name, arm_kwargs))
-    t_leg = threading.Thread(target=_run_motion_in_thread, args=(leg_name, leg_kwargs))
-    t_arm.start()
-    t_leg.start()
-    t_arm.join()
-    t_leg.join()
+def play_parallel(motion1_name, motion1_kwargs, motion2_name, motion2_kwargs):
+    """同时执行两个动作，各自在独立线程中并行运行，全部完成后返回。"""
+    t1 = threading.Thread(target=_run_motion_in_thread, args=(motion1_name, motion1_kwargs))
+    t2 = threading.Thread(target=_run_motion_in_thread, args=(motion2_name, motion2_kwargs))
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
 
 
 def leg_raise_march_with_arms():
