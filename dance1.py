@@ -7,7 +7,7 @@
 import YanAPI
 import time
 
-ROBOT_IP = "192.168.1.115"
+ROBOT_IP = "192.168.1.203"
 
 
 def dance():
@@ -38,6 +38,16 @@ def dance():
     YanAPI.sync_play_motion("walk", direction="forward", repeat=1)
     print("执行动作: walk direction=backward repeat=1")
     YanAPI.sync_play_motion("walk", direction="backward", repeat=1)
+
+    # 抬腿静步走（使用步态控制实现）
+    print("执行步态动作: 抬腿静步走 - 缓慢前行")
+    YanAPI.sync_do_motion_gait(speed_v=2, speed_h=0, steps=5, period=2, wave=True)
+    print("执行步态动作: 抬腿静步走 - 缓慢后退")
+    YanAPI.sync_do_motion_gait(speed_v=-2, speed_h=0, steps=5, period=2, wave=True)
+    print("执行步态动作: 抬腿静步走 - 缓慢左侧移")
+    YanAPI.sync_do_motion_gait(speed_v=0, speed_h=2, steps=5, period=2, wave=True)
+    print("执行步态动作: 抬腿静步走 - 缓慢右侧移")
+    YanAPI.sync_do_motion_gait(speed_v=0, speed_h=-2, steps=5, period=2, wave=True)
 
     # 腿部动作：蹲下再站起
     print("执行动作: crouch")
