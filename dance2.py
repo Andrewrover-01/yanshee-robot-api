@@ -69,13 +69,22 @@ def _run_gait_in_thread(direction, steps, wave=False):
 
 def exit_gait_and_stand():
     """退出步态模式，等待机器人完全站立后再复位。"""
-    YanAPI.exit_motion_gait()
+    try:
+        YanAPI.exit_motion_gait()
+    except Exception as e:
+        logging.error("exit_motion_gait failed: %s", e)
     for _ in range(_GAIT_EXIT_MAX_POLLS):
-        state = YanAPI.get_motion_gait_state()
-        if state.get("data", {}).get("status", 0) >= _GAIT_EXIT_DONE_STATUS:
-            break
+        try:
+            state = YanAPI.get_motion_gait_state()
+            if state.get("data", {}).get("status", 0) >= _GAIT_EXIT_DONE_STATUS:
+                break
+        except Exception as e:
+            logging.warning("get_motion_gait_state failed (retrying): %s", e)
         time.sleep(0.5)
-    YanAPI.sync_play_motion("reset")
+    try:
+        YanAPI.sync_play_motion("reset")
+    except Exception as e:
+        logging.error("reset after gait exit failed: %s", e)
 
 
 def play_parallel(motion1_name, motion1_kwargs, motion2_name, motion2_kwargs):
@@ -118,19 +127,6 @@ def play_parallel(motion1_name, motion1_kwargs, motion2_name, motion2_kwargs):
         exit_gait_and_stand()
 
 
-def gait_march_with_arms(direction, steps):
-    """步态行进配合摆臂：使用 wave=True 同步行走与手臂自然摆动。"""
-    speeds = _GAIT_SPEED_MAP.get(direction, _GAIT_DEFAULT_SPEED)
-    YanAPI.sync_do_motion_gait(
-        speed_v=speeds["speed_v"],
-        speed_h=speeds["speed_h"],
-        steps=steps,
-        period=1,
-        wave=True,
-    )
-    exit_gait_and_stand()
-
-
 def dance():
     # ── 初始化 ─────────────────────────────────────────────────
     YanAPI.yan_api_init(ROBOT_IP)
@@ -142,153 +138,192 @@ def dance():
     # 开场报幕
     YanAPI.sync_do_tts("大家好，我是 Yanshee，现在为大家带来第二支舞蹈，请欣赏！")
 
-    # ── 第一段：热场暖身（约 25 s）──────────────────────────────
+    # ── 第一段：热场暖身（手部招手 + 腿部同步行进，约 30 s）────────
+    # 每个招手动作均与步态行进同时执行，实现手腿并发。
     YanAPI.set_robot_led("button", "blue", "breath")
 
-    # 左右分别招手三次，营造友好开场
-    print("[第一段] wave left × 3")
-    YanAPI.sync_play_motion("wave", direction="left")
-    YanAPI.sync_play_motion("wave", direction="left")
-    YanAPI.sync_play_motion("wave", direction="left")
+    print("[第一段] wave left + walk forward (parallel) × 2")
+    play_parallel("wave", {"direction": "left"},
+                  "walk", {"direction": "forward", "repeat": 1})
+    play_parallel("wave", {"direction": "left"},
+                  "walk", {"direction": "forward", "repeat": 1})
 
-    print("[第一段] wave right × 3")
-    YanAPI.sync_play_motion("wave", direction="right")
-    YanAPI.sync_play_motion("wave", direction="right")
-    YanAPI.sync_play_motion("wave", direction="right")
+    print("[第一段] wave right + walk backward (parallel) × 2")
+    play_parallel("wave", {"direction": "right"},
+                  "walk", {"direction": "backward", "repeat": 1})
+    play_parallel("wave", {"direction": "right"},
+                  "walk", {"direction": "backward", "repeat": 1})
 
-    print("[第一段] wave both × 2")
-    YanAPI.sync_play_motion("wave", direction="both")
-    YanAPI.sync_play_motion("wave", direction="both")
+    print("[第一段] wave both + walk left (parallel)")
+    play_parallel("wave", {"direction": "both"},
+                  "walk", {"direction": "left", "repeat": 1})
 
-    # 左右点头
-    print("[第一段] head left / right / forward")
-    YanAPI.sync_play_motion("head", direction="left")
-    YanAPI.sync_play_motion("head", direction="right")
-    YanAPI.sync_play_motion("head", direction="forward")
+    print("[第一段] wave both + walk right (parallel)")
+    play_parallel("wave", {"direction": "both"},
+                  "walk", {"direction": "right", "repeat": 1})
 
-    # ── 第二段：伸展律动（约 20 s）──────────────────────────────
+    print("[第一段] head left + walk left (parallel)")
+    play_parallel("head", {"direction": "left"},
+                  "walk", {"direction": "left", "repeat": 1})
+
+    print("[第一段] head right + walk right (parallel)")
+    play_parallel("head", {"direction": "right"},
+                  "walk", {"direction": "right", "repeat": 1})
+
+    # ── 第二段：伸展律动（手部伸展 + 腿部同步行进，约 30 s）─────────
     YanAPI.set_robot_led("button", "green", "blink")
 
-    print("[第二段] stretch both × 2")
-    YanAPI.sync_play_motion("stretch", direction="both")
-    YanAPI.sync_play_motion("stretch", direction="both")
+    print("[第二段] stretch both + walk forward (parallel) × 2")
+    play_parallel("stretch", {"direction": "both"},
+                  "walk", {"direction": "forward", "repeat": 1})
+    play_parallel("stretch", {"direction": "both"},
+                  "walk", {"direction": "forward", "repeat": 1})
 
-    print("[第二段] raise left → right → both")
-    YanAPI.sync_play_motion("raise", direction="left")
-    YanAPI.sync_play_motion("raise", direction="right")
-    YanAPI.sync_play_motion("raise", direction="both")
+    print("[第二段] raise left + walk left (parallel)")
+    play_parallel("raise", {"direction": "left"},
+                  "walk", {"direction": "left", "repeat": 1})
 
-    print("[第二段] come on left → right → both")
-    YanAPI.sync_play_motion("come on", direction="left")
-    YanAPI.sync_play_motion("come on", direction="right")
-    YanAPI.sync_play_motion("come on", direction="both")
+    print("[第二段] raise right + walk right (parallel)")
+    play_parallel("raise", {"direction": "right"},
+                  "walk", {"direction": "right", "repeat": 1})
 
-    # ── 第三段：侧步律动（约 20 s）──────────────────────────────
+    print("[第二段] raise both + walk forward (parallel)")
+    play_parallel("raise", {"direction": "both"},
+                  "walk", {"direction": "forward", "repeat": 1})
+
+    print("[第二段] come on left + walk backward (parallel)")
+    play_parallel("come on", {"direction": "left"},
+                  "walk", {"direction": "backward", "repeat": 1})
+
+    print("[第二段] come on right + walk backward (parallel)")
+    play_parallel("come on", {"direction": "right"},
+                  "walk", {"direction": "backward", "repeat": 1})
+
+    print("[第二段] come on both + walk forward (parallel)")
+    play_parallel("come on", {"direction": "both"},
+                  "walk", {"direction": "forward", "repeat": 1})
+
+    # ── 第三段：侧步律动（手部挥舞 + 腿部侧步同时，约 25 s）─────────
     YanAPI.set_robot_led("button", "yellow", "blink")
 
-    # 左右侧步各 2 次，并穿插招手
-    print("[第三段] walk left × 2 + wave right")
-    YanAPI.sync_play_motion("walk", direction="left", repeat=2)
-    YanAPI.sync_play_motion("wave", direction="right")
+    print("[第三段] wave right + walk left × 2 (parallel) × 2")
+    play_parallel("wave", {"direction": "right"},
+                  "walk", {"direction": "left", "repeat": 2})
+    play_parallel("wave", {"direction": "right"},
+                  "walk", {"direction": "left", "repeat": 2})
 
-    print("[第三段] walk right × 2 + wave left")
-    YanAPI.sync_play_motion("walk", direction="right", repeat=2)
-    YanAPI.sync_play_motion("wave", direction="left")
+    print("[第三段] wave left + walk right × 2 (parallel) × 2")
+    play_parallel("wave", {"direction": "left"},
+                  "walk", {"direction": "right", "repeat": 2})
+    play_parallel("wave", {"direction": "left"},
+                  "walk", {"direction": "right", "repeat": 2})
 
-    # 再来一轮侧步
-    print("[第三段] walk left × 2 + wave both")
-    YanAPI.sync_play_motion("walk", direction="left", repeat=2)
-    YanAPI.sync_play_motion("wave", direction="both")
+    print("[第三段] wave both + walk left × 2 (parallel)")
+    play_parallel("wave", {"direction": "both"},
+                  "walk", {"direction": "left", "repeat": 2})
 
-    print("[第三段] walk right × 2 + raise both")
-    YanAPI.sync_play_motion("walk", direction="right", repeat=2)
-    YanAPI.sync_play_motion("raise", direction="both")
+    print("[第三段] raise both + walk right × 2 (parallel)")
+    play_parallel("raise", {"direction": "both"},
+                  "walk", {"direction": "right", "repeat": 2})
 
-    # ── 第四段：行进组合（约 20 s）──────────────────────────────
+    # ── 第四段：行进组合（手部指定动作 + 腿部步态同时，约 25 s）──────
     YanAPI.set_robot_led("button", "purple", "breath")
 
-    # 向前走配合摆臂，再向后退回
-    print("[第四段] gait forward 6 steps with wave arms")
-    gait_march_with_arms("forward", 6)
+    print("[第四段] raise both + walk forward × 3 (parallel)")
+    play_parallel("raise", {"direction": "both"},
+                  "walk", {"direction": "forward", "repeat": 3})
 
-    print("[第四段] gait backward 6 steps with wave arms")
-    gait_march_with_arms("backward", 6)
+    print("[第四段] stretch both + walk backward × 3 (parallel)")
+    play_parallel("stretch", {"direction": "both"},
+                  "walk", {"direction": "backward", "repeat": 3})
 
-    # 转向侧走
-    print("[第四段] gait left 4 steps with wave arms")
-    gait_march_with_arms("left", 4)
+    print("[第四段] come on both + walk left × 2 (parallel)")
+    play_parallel("come on", {"direction": "both"},
+                  "walk", {"direction": "left", "repeat": 2})
 
-    print("[第四段] gait right 4 steps with wave arms")
-    gait_march_with_arms("right", 4)
+    print("[第四段] wave both + walk right × 2 (parallel)")
+    play_parallel("wave", {"direction": "both"},
+                  "walk", {"direction": "right", "repeat": 2})
 
-    # ── 第五段：旋转展示（约 15 s）──────────────────────────────
+    # ── 第五段：旋转展示（约 20 s）───────────────────────────────
+    # turn around 是全身协调动作（手臂与腿部一体旋转），保留为独立动作。
     YanAPI.set_robot_led("button", "cyan", "breath")
 
     print("[第五段] turn around left × 2")
     YanAPI.sync_play_motion("turn around", direction="left")
     YanAPI.sync_play_motion("turn around", direction="left")
 
-    print("[第五段] turn around right × 2")
-    YanAPI.sync_play_motion("turn around", direction="right")
-    YanAPI.sync_play_motion("turn around", direction="right")
+    # 转圈后庆祝：手腿并发
+    print("[第五段] raise both + walk forward (parallel)")
+    play_parallel("raise", {"direction": "both"},
+                  "walk", {"direction": "forward", "repeat": 1})
 
-    # 转圈后高举双臂庆祝
-    print("[第五段] raise both + come on both")
-    YanAPI.sync_play_motion("raise", direction="both")
-    YanAPI.sync_play_motion("come on", direction="both")
+    print("[第五段] come on both + walk backward (parallel)")
+    play_parallel("come on", {"direction": "both"},
+                  "walk", {"direction": "backward", "repeat": 1})
 
-    # ── 第六段：蹲起节拍（约 20 s）──────────────────────────────
+    print("[第五段] wave both + walk left (parallel)")
+    play_parallel("wave", {"direction": "both"},
+                  "walk", {"direction": "left", "repeat": 1})
+
+    print("[第五段] stretch both + walk right (parallel)")
+    play_parallel("stretch", {"direction": "both"},
+                  "walk", {"direction": "right", "repeat": 1})
+
+    # ── 第六段：蹲起节拍（约 25 s）───────────────────────────────
+    # crouch/reset 为全身姿态动作；每次蹲起前后各加一次手腿并发律动。
     YanAPI.set_robot_led("button", "red", "blink")
 
-    # 蹲下 → 站起 三个循环，模拟律动节拍
     for i in range(3):
-        print(f"[第六段] crouch + reset (cycle {i + 1}/3)")
+        print(f"[第六段] wave both + walk left (parallel) → crouch → reset (cycle {i + 1}/3)")
+        play_parallel("wave", {"direction": "both"},
+                      "walk", {"direction": "left", "repeat": 1})
         YanAPI.sync_play_motion("crouch")
         YanAPI.sync_play_motion("reset")
 
-    # 蹲起后左右挥手庆祝
-    print("[第六段] wave left + wave right + wave both")
-    YanAPI.sync_play_motion("wave", direction="left")
-    YanAPI.sync_play_motion("wave", direction="right")
-    YanAPI.sync_play_motion("wave", direction="both")
+    # 收尾：举臂前进 → 挥手后退
+    print("[第六段] raise both + walk forward (parallel)")
+    play_parallel("raise", {"direction": "both"},
+                  "walk", {"direction": "forward", "repeat": 1})
+    print("[第六段] wave both + walk backward (parallel)")
+    play_parallel("wave", {"direction": "both"},
+                  "walk", {"direction": "backward", "repeat": 1})
 
-    # ── 第七段：并发高潮（约 20 s）──────────────────────────────
+    # ── 第七段：并发高潮（约 30 s）───────────────────────────────
     YanAPI.set_robot_led("button", "white", "breath")
 
-    # 举臂同时前进
     print("[第七段] raise both + walk forward × 2 (parallel)")
     play_parallel("raise", {"direction": "both"},
                   "walk", {"direction": "forward", "repeat": 2})
 
-    # 加油同时侧走左
     print("[第七段] come on both + walk left × 2 (parallel)")
     play_parallel("come on", {"direction": "both"},
                   "walk", {"direction": "left", "repeat": 2})
 
-    # 伸展同时侧走右
     print("[第七段] stretch both + walk right × 2 (parallel)")
     play_parallel("stretch", {"direction": "both"},
                   "walk", {"direction": "right", "repeat": 2})
 
-    # 举臂同时后退回位
     print("[第七段] raise both + walk backward × 2 (parallel)")
     play_parallel("raise", {"direction": "both"},
                   "walk", {"direction": "backward", "repeat": 2})
 
-    # 并发段收尾：双手挥舞
-    print("[第七段] wave both × 2")
-    YanAPI.sync_play_motion("wave", direction="both")
-    YanAPI.sync_play_motion("wave", direction="both")
+    print("[第七段] wave both + walk left × 2 (parallel)")
+    play_parallel("wave", {"direction": "both"},
+                  "walk", {"direction": "left", "repeat": 2})
 
-    # ── 第八段：尾声谢幕（约 10 s）──────────────────────────────
+    print("[第七段] wave both + walk right × 2 (parallel)")
+    play_parallel("wave", {"direction": "both"},
+                  "walk", {"direction": "right", "repeat": 2})
+
+    # ── 第八段：尾声谢幕（约 10 s）───────────────────────────────
+    # bow/reset 为全身姿态动作，保留为独立动作。
     YanAPI.set_robot_led("button", "white", "blink")
 
-    # 鞠躬致谢
     print("[第八段] bow")
     YanAPI.sync_play_motion("bow")
     YanAPI.sync_do_tts("感谢大家观看，第二支舞蹈表演结束，再见！")
 
-    # 复位，灯光恢复常亮
     print("[第八段] reset")
     YanAPI.sync_play_motion("reset")
     YanAPI.set_robot_led("button", "white", "on")
