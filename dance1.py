@@ -12,6 +12,14 @@ import time
 
 ROBOT_IP = "192.168.1.203"
 
+# 每次 walk 动作对应的步态步数（一次 walk 含左右各一步，共 2 个步态步）
+_WALK_REPEAT_TO_STEPS = 2
+
+# exit_gait_and_stand 中等待步态退出的最大轮询次数（每次 0.5 s，共 15 s 超时）
+_GAIT_EXIT_MAX_POLLS = 30
+# 步态退出完成的最低状态码（7 = 已退出步态就绪, 8 = 空闲）
+_GAIT_EXIT_DONE_STATUS = 7
+
 # 步态 API 的方向 → 速度映射（speed_v: 前后, speed_h: 左右）
 _GAIT_SPEED_MAP = {
     "forward":  {"speed_v":  3, "speed_h":  0},
@@ -59,10 +67,10 @@ def _run_gait_in_thread(direction, steps, wave=False):
 def exit_gait_and_stand():
     """退出步态模式，等待机器人完全站立后再复位。"""
     YanAPI.exit_motion_gait()
-    # 等待步态退出完成（状态 7 = 已退出步态就绪, 8 = 空闲）
-    for _ in range(30):
+    # 等待步态退出完成（_GAIT_EXIT_DONE_STATUS: 7 = 已退出步态就绪, 8 = 空闲）
+    for _ in range(_GAIT_EXIT_MAX_POLLS):
         state = YanAPI.get_motion_gait_state()
-        if state.get("data", {}).get("status", 0) >= 7:
+        if state.get("data", {}).get("status", 0) >= _GAIT_EXIT_DONE_STATUS:
             break
         time.sleep(0.5)
     YanAPI.sync_play_motion("reset")
@@ -81,7 +89,7 @@ def play_parallel(motion1_name, motion1_kwargs, motion2_name, motion2_kwargs):
         direction = motion1_kwargs.get("direction", "forward")
         repeat = motion1_kwargs.get("repeat", 1)
         t1 = threading.Thread(target=_run_gait_in_thread,
-                              args=(direction, repeat * 2))
+                              args=(direction, repeat * _WALK_REPEAT_TO_STEPS))
         t2 = threading.Thread(target=_run_motion_in_thread,
                               args=(motion2_name, motion2_kwargs))
         uses_gait = True
@@ -91,7 +99,7 @@ def play_parallel(motion1_name, motion1_kwargs, motion2_name, motion2_kwargs):
         t1 = threading.Thread(target=_run_motion_in_thread,
                               args=(motion1_name, motion1_kwargs))
         t2 = threading.Thread(target=_run_gait_in_thread,
-                              args=(direction, repeat * 2))
+                              args=(direction, repeat * _WALK_REPEAT_TO_STEPS))
         uses_gait = True
     else:
         t1 = threading.Thread(target=_run_motion_in_thread,
