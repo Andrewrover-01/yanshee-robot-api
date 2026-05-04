@@ -12,6 +12,14 @@ import time
 
 ROBOT_IP = "192.168.1.203"
 
+# 步态 API 的方向 → 速度映射（speed_v: 前后, speed_h: 左右）
+_GAIT_SPEED_MAP = {
+    "forward":  {"speed_v":  3, "speed_h":  0},
+    "backward": {"speed_v": -3, "speed_h":  0},
+    "left":     {"speed_v":  0, "speed_h": -3},
+    "right":    {"speed_v":  0, "speed_h":  3},
+}
+
 
 def _run_motion_in_thread(name, kwargs):
     """在独立线程中执行 sync_play_motion，每个线程使用独立的 asyncio 事件循环。"""
@@ -25,62 +33,97 @@ def _run_motion_in_thread(name, kwargs):
         loop.close()
 
 
+def _run_gait_in_thread(direction, steps, wave=False):
+    """在独立线程中用步态 API（PUT /motions/gait）执行行走动作。
+
+    步态 API 与动作 API（PUT /motions）使用不同的端点，两者可同时运行
+    而互不干扰，从而实现腿部和手部动作的真正并发。
+    """
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        speeds = _GAIT_SPEED_MAP.get(direction, {"speed_v": 3, "speed_h": 0})
+        YanAPI.sync_do_motion_gait(
+            speed_v=speeds["speed_v"],
+            speed_h=speeds["speed_h"],
+            steps=steps,
+            period=1,
+            wave=wave,
+        )
+    except Exception as e:
+        logging.error("gait walk direction='%s' failed: %s", direction, e)
+    finally:
+        loop.close()
+
+
+def exit_gait_and_stand():
+    """退出步态模式，等待机器人完全站立后再复位。"""
+    YanAPI.exit_motion_gait()
+    # 等待步态退出完成（状态 7 = 已退出步态就绪, 8 = 空闲）
+    for _ in range(30):
+        state = YanAPI.get_motion_gait_state()
+        if state.get("data", {}).get("status", 0) >= 7:
+            break
+        time.sleep(0.5)
+    YanAPI.sync_play_motion("reset")
+
+
 def play_parallel(motion1_name, motion1_kwargs, motion2_name, motion2_kwargs):
-    """同时执行两个动作，各自在独立线程中并行运行，全部完成后返回。"""
-    t1 = threading.Thread(target=_run_motion_in_thread, args=(motion1_name, motion1_kwargs))
-    t2 = threading.Thread(target=_run_motion_in_thread, args=(motion2_name, motion2_kwargs))
+    """同时执行两个动作，全部完成后返回。
+
+    当其中一个动作为 walk 时，自动改用步态 API（PUT /motions/gait）执行，
+    以避免与动作 API（PUT /motions）共用同一端点造成互相取消的问题。
+    步态部分结束后自动退出步态模式并恢复站立。
+    """
+    uses_gait = False
+
+    if motion1_name == "walk":
+        direction = motion1_kwargs.get("direction", "forward")
+        repeat = motion1_kwargs.get("repeat", 1)
+        t1 = threading.Thread(target=_run_gait_in_thread,
+                              args=(direction, repeat * 2))
+        t2 = threading.Thread(target=_run_motion_in_thread,
+                              args=(motion2_name, motion2_kwargs))
+        uses_gait = True
+    elif motion2_name == "walk":
+        direction = motion2_kwargs.get("direction", "forward")
+        repeat = motion2_kwargs.get("repeat", 1)
+        t1 = threading.Thread(target=_run_motion_in_thread,
+                              args=(motion1_name, motion1_kwargs))
+        t2 = threading.Thread(target=_run_gait_in_thread,
+                              args=(direction, repeat * 2))
+        uses_gait = True
+    else:
+        t1 = threading.Thread(target=_run_motion_in_thread,
+                              args=(motion1_name, motion1_kwargs))
+        t2 = threading.Thread(target=_run_motion_in_thread,
+                              args=(motion2_name, motion2_kwargs))
+
     t1.start()
     t2.start()
     t1.join()
     t2.join()
 
+    if uses_gait:
+        exit_gait_and_stand()
+
 
 def leg_raise_march_with_arms():
-    """抬腿静步走：每迈一步配合手部摆动动作，模拟自然行进中的手臂协调摆动效果。
+    """抬腿静步走：使用步态 API 的 wave=True 参数，实现行走腿部动作与手臂
+    自然摆动同步并发执行。
 
-    通过交替调用 walk（迈步）和 wave/raise/come on（手部动作）实现：
-      节拍1  左手挥手 + 向前迈步
-      节拍2  右手挥手 + 向前迈步
-      节拍3  左臂举起 + 向前迈步
-      节拍4  右臂举起 + 向前迈步
-      节拍5  双手加油 + 向前迈步
-      节拍6  左手挥手 + 向前迈步
-      收尾    双手挥手 + 后退回位
+    向前走 6 步并摆臂，再向后退 6 步回到原位，最后退出步态模式恢复站立。
     """
-    # 节拍1：左手挥手 + 向前迈步（同时执行）
-    print("抬腿静步走 节拍1: wave left + walk forward")
-    play_parallel("wave", {"direction": "left"},
-                  "walk", {"direction": "forward", "repeat": 1})
+    # 向前走 6 步，同时摆动手臂（wave=True 使手臂在步行中自然协调摆动）
+    print("抬腿静步走: 向前走6步并自然摆臂 (gait wave=True)")
+    YanAPI.sync_do_motion_gait(speed_v=3, steps=6, period=1, wave=True)
 
-    # 节拍2：右手挥手 + 向前迈步（同时执行）
-    print("抬腿静步走 节拍2: wave right + walk forward")
-    play_parallel("wave", {"direction": "right"},
-                  "walk", {"direction": "forward", "repeat": 1})
+    # 向后退 6 步回位，同时摆动手臂
+    print("抬腿静步走 收尾: 向后走6步回位并摆臂 (gait wave=True)")
+    YanAPI.sync_do_motion_gait(speed_v=-3, steps=6, period=1, wave=True)
 
-    # 节拍3：左臂举起 + 向前迈步（同时执行）
-    print("抬腿静步走 节拍3: raise left + walk forward")
-    play_parallel("raise", {"direction": "left"},
-                  "walk", {"direction": "forward", "repeat": 1})
-
-    # 节拍4：右臂举起 + 向前迈步（同时执行）
-    print("抬腿静步走 节拍4: raise right + walk forward")
-    play_parallel("raise", {"direction": "right"},
-                  "walk", {"direction": "forward", "repeat": 1})
-
-    # 节拍5：双手加油 + 向前迈步（同时执行）
-    print("抬腿静步走 节拍5: come on both + walk forward")
-    play_parallel("come on", {"direction": "both"},
-                  "walk", {"direction": "forward", "repeat": 1})
-
-    # 节拍6：左手再次挥手 + 向前迈步（同时执行）
-    print("抬腿静步走 节拍6: wave left + walk forward")
-    play_parallel("wave", {"direction": "left"},
-                  "walk", {"direction": "forward", "repeat": 1})
-
-    # 收尾：双手挥手 + 后退回位（同时执行）
-    print("抬腿静步走 收尾: wave both + walk backward")
-    play_parallel("wave", {"direction": "both"},
-                  "walk", {"direction": "backward", "repeat": 6})
+    # 退出步态模式，恢复站立，准备后续动作
+    exit_gait_and_stand()
 
 
 def dance():
