@@ -11,8 +11,10 @@ ROBOT_IP = "192.168.1.21"
 
 def leg_raise_march_with_arms():
     """抬腿静步走：使用 gait wave=True，由底层步态引擎同步腿部步态与手臂摆动。"""
-    print("抬腿静步走: gait wave=True")
-    YanAPI.sync_do_motion_gait(speed_v=2, speed_h=0, steps=8, period=2, wave=True)
+    print("抬腿静步走: gait wave=True forward x6")
+    YanAPI.sync_do_motion_gait(speed_v=2, speed_h=0, steps=6, period=2, wave=True)
+    print("抬腿静步走: gait wave=True backward x6")
+    YanAPI.sync_do_motion_gait(speed_v=-2, speed_h=0, steps=6, period=2, wave=True)
 
 
 def dance():
