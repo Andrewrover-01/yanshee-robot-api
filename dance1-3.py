@@ -2,10 +2,11 @@
 """方案3：使用 version='v2' 的 layer 动作并发。"""
 
 import asyncio
+import os
 import threading
 import YanAPI
 
-ROBOT_IP = "192.168.1.21"
+ROBOT_IP = os.getenv("YAN_ROBOT_IP", "192.168.1.21")
 
 
 def _run_with_event_loop(func, *args, **kwargs):
@@ -26,13 +27,20 @@ def dance():
     YanAPI.yan_api_init(ROBOT_IP)
     YanAPI.sync_play_motion("reset")
 
-    # v2 layer 并发示例：脚步 + 手部
-    t1 = threading.Thread(target=_run_with_event_loop, args=(_play_v2, "walk"), kwargs={"direction": "forward", "repeat": 2})
-    t2 = threading.Thread(target=_run_with_event_loop, args=(_play_v2, "wave"), kwargs={"direction": "both"})
-    t1.start()
-    t2.start()
-    t1.join()
-    t2.join()
+    walk_thread = threading.Thread(
+        target=_run_with_event_loop,
+        args=(_play_v2, "walk"),
+        kwargs={"direction": "forward", "repeat": 2},
+    )
+    wave_thread = threading.Thread(
+        target=_run_with_event_loop,
+        args=(_play_v2, "wave"),
+        kwargs={"direction": "both"},
+    )
+    walk_thread.start()
+    wave_thread.start()
+    walk_thread.join()
+    wave_thread.join()
 
     YanAPI.sync_play_motion("reset")
 
