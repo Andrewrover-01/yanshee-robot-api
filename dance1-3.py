@@ -20,7 +20,7 @@ def _run_with_event_loop(func, *args, **kwargs):
 
 def _play_v2(name, **kwargs):
     ok = YanAPI.sync_play_motion(name, version="v2", **kwargs)
-    print(f"{name} v2 done:", ok)
+    print(f"[{threading.current_thread().name}] {name} v2 done: {ok}")
 
 
 def dance():
@@ -28,11 +28,13 @@ def dance():
     YanAPI.sync_play_motion("reset")
 
     walk_thread = threading.Thread(
+        name="walk_thread",
         target=_run_with_event_loop,
         args=(_play_v2, "walk"),
         kwargs={"direction": "forward", "repeat": 2},
     )
     wave_thread = threading.Thread(
+        name="wave_thread",
         target=_run_with_event_loop,
         args=(_play_v2, "wave"),
         kwargs={"direction": "both"},
