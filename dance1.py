@@ -7,14 +7,17 @@
 import YanAPI
 
 ROBOT_IP = "192.168.1.21"
+MARCH_SPEED = 2
+MARCH_STEPS = 6
+MARCH_PERIOD = 2
 
 
 def leg_raise_march_with_arms():
-    """抬腿静步走：使用 gait wave=True，由底层步态引擎同步腿部步态与手臂摆动。"""
+    """抬腿静步走：使用 gait wave=True，由底层步态引擎同步腿部步态与手臂摆动（自然交替摆臂）。"""
     print("抬腿静步走: gait wave=True forward x6")
-    YanAPI.sync_do_motion_gait(speed_v=2, speed_h=0, steps=6, period=2, wave=True)
+    YanAPI.sync_do_motion_gait(speed_v=MARCH_SPEED, speed_h=0, steps=MARCH_STEPS, period=MARCH_PERIOD, wave=True)
     print("抬腿静步走: gait wave=True backward x6")
-    YanAPI.sync_do_motion_gait(speed_v=-2, speed_h=0, steps=6, period=2, wave=True)
+    YanAPI.sync_do_motion_gait(speed_v=-MARCH_SPEED, speed_h=0, steps=MARCH_STEPS, period=MARCH_PERIOD, wave=True)
 
 
 def dance():
@@ -140,7 +143,7 @@ def dance():
 
     # 手腿同步前进（由 gait wave=True 一步到位）
     print("执行动作: gait speed_v=2 steps=1 period=2 wave=True")
-    YanAPI.sync_do_motion_gait(speed_v=2, speed_h=0, steps=1, period=2, wave=True)
+    YanAPI.sync_do_motion_gait(speed_v=MARCH_SPEED, speed_h=0, steps=1, period=MARCH_PERIOD, wave=True)
     print("执行动作: wave direction=both")
     YanAPI.sync_play_motion("wave", direction="both")
     # 转圈 + 加油 + 伸展
