@@ -10,7 +10,7 @@ import asyncio
 import YanAPI
 import time
 
-ROBOT_IP = "192.168.1.219"
+ROBOT_IP = "192.168.1.21"
 
 
 def _run_motion_in_thread(name, kwargs):
